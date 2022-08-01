@@ -1,3 +1,10 @@
+// Test entry & extern:
+.entry LOOP, NOICE, AYO
+.entry LENGTH
+.extern L3, BRUH, OK
+.extern W
+
+
 .data 6, -9, 15
 .data 7, -57, +17, 9
 XYZ: .data 3, -30, +21, 18
@@ -16,3 +23,7 @@ strct8: .struct 8, "xyz"
 strct8: .struct 8, "xyz"
 mov A
 EREZ a, b, c, d
+
+// Test entry & extern:
+LOOP: jmp W
+LENGTH: .data 6, -9, 15

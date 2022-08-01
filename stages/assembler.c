@@ -100,11 +100,18 @@ char *extract_dest_address(char *ptr) {
 // Check for invalid usage of oprator (i.e
 void handle_operator(char *ptr, unsigned long *dc, data **data_arr, issue ** errors_array, int *ec, int lc) {
     if (!validate_operator_usage(ptr)) {
-        // Adding an error message:
-        char * error = (char *)malloc(57*sizeof(char));
-        snprintf(error, 57, "Operator received wrong amount of args, Expected: %d.",
-                 (int)get_operator(ptr)->ops_count);
+        // ops_count is a single digit number, meaning it will have 1 char, therefore it will replace the "%d" and we
+        // don't need to allocate any extra memory:
+        size_t errLen = strlen("Operator received wrong amount of args - Expected: %d.");
+        char *error = (char *)malloc((strlen("Operator received wrong amount of args - Expected: %d."))* sizeof(char));
+        snprintf(error, errLen, "Operator received wrong amount of args - Expected: %d.", (int)get_operator(ptr)->ops_count);
         add_new_issue_to_arr(errors_array, ec, lc, error);
+
+        // Adding an error message:
+//        char * error = (char *)malloc(57*sizeof(char));
+//        snprintf(error, 57, "Operator received wrong amount of args, Expected: %d.",
+//                 (int)get_operator(ptr)->ops_count);
+//        add_new_issue_to_arr(errors_array, ec, lc, error);
         return;
     }
     char *are_encoding = parse_are(determine_are(ptr)); // 0-1
@@ -125,6 +132,48 @@ void handle_operator(char *ptr, unsigned long *dc, data **data_arr, issue ** err
 //    }
 }
 
+
+/**
+ * Handle entry lines from the source code.
+ * Basically detects and appends entry symbols to the symbols linked list.
+ * @param head A pointer to the head of a linked list that consists of symbols.
+ * @param ptr A pointer to a given line from the source code.
+ * @param errors_array An array of errors which will be outputted to the user.
+ * @param ec errors counter (index in errors array).
+ * @param lc lines counter (lines index in source code file).
+ */
+void handle_entry(symbol** head, char *ptr, issue ** errors_array, int *ec, int lc) {
+    // Skip the extern word & define a token with the contents of the first symbol:
+    ptr = ptr + strlen(".entry") + 1;
+    char *symbolName = NULL, *token = strtok(ptr, ",");
+    // Appending each symbol to the symbols list:
+    while (token != NULL) {
+        symbolName = (char *)strdup(token);
+        append_unique(head, symbolName, 0, symbol_entry, errors_array, ec, lc);
+        token = strtok(NULL, ",");
+    }
+}
+
+/**
+ * Handle extern lines from the source code.
+ * Basically detects and appends extern symbols to the symbols linked list.
+ * @param head A pointer to the head of a linked list that consists of symbols.
+ * @param ptr A pointer to a given line from the source code.
+ * @param errors_array An array of errors which will be outputted to the user.
+ * @param ec errors counter (index in errors array).
+ * @param lc lines counter (lines index in source code file).
+ */
+void handle_extern(symbol** head, char *ptr, issue ** errors_array, int *ec, int lc) {
+    // Skip the extern word & define a token with the contents of the first symbol:
+    ptr = ptr + strlen(".extern") + 1;
+    char *symbolName = NULL, *token = strtok(ptr, ",");
+    // Appending each symbol to the symbols list:
+    while (token != NULL) {
+        symbolName = (char *)strdup(token);
+        append_unique(head, symbolName, 0, symbol_extern, errors_array, ec, lc);
+        token = strtok(NULL, ",");
+    }
+}
 
 /**
  * A function in charge of determining the symbol type of the received string.
@@ -177,27 +226,22 @@ void handle_line(symbol **head, unsigned long *dc, const char *line, data **data
 
     // Fetch the actual data type of the row (after "skipping" the symbol_type part):
     curDataType = parse_str(ptr);
-
-    switch (curDataType) {
-        case sstring:
-            handle_string(ptr, dc, data_arr);
-            break;
-        case sdata:
-            handle_data(ptr, dc, data_arr);
-            break;
-        case sstruct:
-            // Handling data up to the first comma & string after the first comma:
-            handle_data(strtok(ptr, ","), dc, data_arr);
-            handle_string(strtok(NULL, ","), dc, data_arr);
-            break;
-        case op:
-            handle_operator(ptr, dc, data_arr, errors_array, ec, lc);
-            printf("noice: %s\n", ptr);
-            break;
-        default:
-            add_new_issue_to_arr(errors_array, ec, lc, "Invalid instruction.");
-            break;
-    }
+    if (curDataType == sstring)
+        handle_string(ptr, dc, data_arr);
+    else if (curDataType == sdata)
+        handle_data(ptr, dc, data_arr);
+    else if (curDataType == sstruct) {
+        // Handling data up to the first comma & string after the first comma:
+        handle_data(strtok(ptr, ","), dc, data_arr);
+        handle_string(strtok(NULL, ","), dc, data_arr);
+    } else if (curDataType == op)
+        handle_operator(ptr, dc, data_arr, errors_array, ec, lc);
+    else if (curDataType == iextern)
+        handle_extern(head, ptr, errors_array, ec, lc);
+    else if (curDataType == ientry)
+        handle_entry(head, ptr, errors_array, ec, lc);
+    else
+        add_new_issue_to_arr(errors_array, ec, lc, "Invalid instruction.");
 }
 
 symbol* generate_symbols(char* content) {

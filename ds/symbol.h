@@ -2,7 +2,7 @@
 #define MAMAN14_SYMBOL_H
 #include <stdlib.h>
 #include "../ds/issue.h"
-enum symbol_type { symbol_data, symbol_code, symbol_invalid };
+enum symbol_type { symbol_data, symbol_code, symbol_extern, symbol_entry, symbol_invalid };
 typedef struct Node
 {
     char* value;

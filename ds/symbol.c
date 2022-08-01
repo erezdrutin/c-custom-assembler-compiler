@@ -74,7 +74,12 @@ int append_unique(symbol** head_ref, char* new_symbol, unsigned int new_address,
         issue **errors_array, int * ec, int lc) {
     // Checking if the symbol already exists in the list:
     if (list_exists(*head_ref, new_symbol)) {
-        add_new_issue_to_arr(errors_array, ec, lc, "can't define the same symbol twice.");
+        // -1 for the %s part which will be replaced in the process:
+        size_t errLen = strlen("can't define the same symbol twice - %s.") + strlen(new_symbol) - 1;
+        char *error = (char *)malloc((strlen("can't define the same symbol twice - %s.") +
+                strlen(new_symbol))* sizeof(char));
+        snprintf(error, errLen, "can't define the same symbol twice - %s.", new_symbol);
+        add_new_issue_to_arr(errors_array, ec, lc, error);
         return 0;
     }
     // Otherwise - appending it:
