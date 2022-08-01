@@ -90,11 +90,65 @@ build CMakeFiles/maman14.dir/utils/strings.c.o: C_COMPILER__maman14_Debug /Users
   OBJECT_DIR = CMakeFiles/maman14.dir
   OBJECT_FILE_DIR = CMakeFiles/maman14.dir/utils
 
-build CMakeFiles/maman14.dir/utils/conversion.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/utils/conversion.c || cmake_object_order_depends_target_maman14
-  DEP_FILE = CMakeFiles/maman14.dir/utils/conversion.c.o.d
+build CMakeFiles/maman14.dir/stages/pre_assembly.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/stages/pre_assembly.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/stages/pre_assembly.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/stages
+
+build CMakeFiles/maman14.dir/utils/macros.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/utils/macros.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/utils/macros.c.o.d
   FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
   OBJECT_DIR = CMakeFiles/maman14.dir
   OBJECT_FILE_DIR = CMakeFiles/maman14.dir/utils
+
+build CMakeFiles/maman14.dir/stages/assembler.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/stages/assembler.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/stages/assembler.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/stages
+
+build CMakeFiles/maman14.dir/ds/symbol.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/ds/symbol.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/ds/symbol.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/ds
+
+build CMakeFiles/maman14.dir/utils/conversions.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/utils/conversions.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/utils/conversions.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/utils
+
+build CMakeFiles/maman14.dir/ds/data.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/ds/data.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/ds/data.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/ds
+
+build CMakeFiles/maman14.dir/utils/dates.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/utils/dates.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/utils/dates.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/utils
+
+build CMakeFiles/maman14.dir/stages/assembler_old.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/stages/assembler_old.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/stages/assembler_old.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/stages
+
+build CMakeFiles/maman14.dir/ds/operators.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/ds/operators.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/ds/operators.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/ds
+
+build CMakeFiles/maman14.dir/ds/issue.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/ds/issue.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/ds/issue.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/ds
 
 
 # =============================================================================
@@ -104,7 +158,7 @@ build CMakeFiles/maman14.dir/utils/conversion.c.o: C_COMPILER__maman14_Debug /Us
 #############################################
 # Link the executable maman14
 
-build maman14: C_EXECUTABLE_LINKER__maman14_Debug CMakeFiles/maman14.dir/main.c.o CMakeFiles/maman14.dir/utils/files.c.o CMakeFiles/maman14.dir/utils/strings.c.o CMakeFiles/maman14.dir/utils/conversion.c.o
+build maman14: C_EXECUTABLE_LINKER__maman14_Debug CMakeFiles/maman14.dir/main.c.o CMakeFiles/maman14.dir/utils/files.c.o CMakeFiles/maman14.dir/utils/strings.c.o CMakeFiles/maman14.dir/stages/pre_assembly.c.o CMakeFiles/maman14.dir/utils/macros.c.o CMakeFiles/maman14.dir/stages/assembler.c.o CMakeFiles/maman14.dir/ds/symbol.c.o CMakeFiles/maman14.dir/utils/conversions.c.o CMakeFiles/maman14.dir/ds/data.c.o CMakeFiles/maman14.dir/utils/dates.c.o CMakeFiles/maman14.dir/stages/assembler_old.c.o CMakeFiles/maman14.dir/ds/operators.c.o CMakeFiles/maman14.dir/ds/issue.c.o
   FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk
   OBJECT_DIR = CMakeFiles/maman14.dir
   POST_BUILD = :

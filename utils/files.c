@@ -18,6 +18,7 @@ int does_file_exist(const char *filename)
     return 0;
 }
 
+
 /**
  * A function in charge of reading a file into a dynamically allocated string.
  * @param filename The name of the file which we would like to read.
@@ -52,4 +53,24 @@ char* read_file(char* filename) {
 
     // Return the contents of the file.
     return str;
+}
+
+
+
+int write_file(char* filename, char* content){
+    FILE *fp;
+    // Open file in write mode
+    fp = fopen(filename,"w+");
+
+    // If file opened successfully, then write the string to file
+    if (fp)
+    {
+        fputs(content,fp);
+    }
+    else
+    {
+        printf("Failed to open the file\n");
+    }
+    // Close the file
+    fclose(fp);
 }

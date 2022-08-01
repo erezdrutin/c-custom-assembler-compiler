@@ -1,0 +1,18 @@
+.data 6, -9, 15
+.data 7, -57, +17, 9
+XYZ: .data 3, -30, +21, 18
+// setting r1's value to XYZ, meaning r1 = 3:
+mov XYZ, r1
+// setting r1's value to the address of XYZ (the address of the value 3):
+SIU: lea XYZ, r1
+// Allocates 7 words (abcdef\0), STR's value is a's address:
+.data 7, -57, +17, 9
+STR: .string "abcdef"
+STR: .string "abcdef"
+STR: .string "abcdef"
+
+// A structure contains 2 fields, strct8's value is 8's address (total of 5 words in this case: 8xyz\0):
+strct8: .struct 8, "xyz"
+strct8: .struct 8, "xyz"
+mov A
+EREZ a, b, c, d
