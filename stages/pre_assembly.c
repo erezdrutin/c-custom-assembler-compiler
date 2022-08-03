@@ -1,6 +1,6 @@
 #include "pre_assembly.h"
 #include "../utils/macros.h"
-#include "../utils/strings.h"
+#include "../utils/string_utils.h"
 #include "../utils/files.h"
 #include <stdlib.h>
 #include <string.h>

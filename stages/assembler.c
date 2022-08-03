@@ -1,8 +1,8 @@
 #include "assembler.h"
-#include "../ds/data.h"
+#include "../ds/word.h"
 #include "../ds/operators.h"
 #include "../utils/conversions.h"
-#include "../utils/strings.h"
+#include "../utils/string_utils.h"
 #include <string.h>
 #include <ctype.h>
 #include <printf.h>
@@ -47,13 +47,13 @@ enum data_type parse_str(char* str) {
  * @param dc The data counter.
  * @param data_arr An array of data structs.
  */
-void handle_data(char *ptr, unsigned long *dc, data **data_arr) {
+void handle_data(char *ptr, unsigned long *dc, word **data_arr) {
     while (*ptr) { // While there are more characters to process...
         if ( isdigit(*ptr) || ( (*ptr=='-'||*ptr=='+') && isdigit(*(ptr+1)) )) {
-            data temp;
+            word temp;
             convert_to_10_bit_bin(strtoll(ptr, &ptr, 10), temp.value);
             temp.address = (*dc);
-            *data_arr = (data *)realloc(*data_arr, sizeof(data)*((*dc) + 1));
+            *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
             (*data_arr)[(*dc)++] = temp;
             ptr = strchr(ptr, ',') ? strchr(ptr, ',') : strchr(ptr, '\0');
         } else {
@@ -70,14 +70,14 @@ void handle_data(char *ptr, unsigned long *dc, data **data_arr) {
  * @param dc The counter of the data.
  * @param data_arr An array of data to which we would like to append stuff if relevant.
  */
-void handle_string(char *ptr, unsigned long *dc, data **data_arr) {
+void handle_string(char *ptr, unsigned long *dc, word **data_arr) {
     ptr = strchr(ptr, '"') + 1;
     while (*ptr != '"' && *ptr) {
         if (isalnum(*ptr)) {
-            data temp;
+            word temp;
             convert_to_10_bit_bin((size_t)*ptr, temp.value);
             temp.address = (*dc);
-            *data_arr = (data *)realloc(*data_arr, sizeof(data)*((*dc) + 1));
+            *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
             (*data_arr)[(*dc)++] = temp;
         }
         ptr++;
@@ -98,22 +98,19 @@ char *extract_dest_address(char *ptr) {
 
 
 // Check for invalid usage of oprator (i.e
-void handle_operator(char *ptr, unsigned long *dc, data **data_arr, issue ** errors_array, int *ec, int lc) {
+void handle_operator(char *ptr, symbol **head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc) {
     if (!validate_operator_usage(ptr)) {
         // ops_count is a single digit number, meaning it will have 1 char, therefore it will replace the "%d" and we
-        // don't need to allocate any extra memory:
+        // don't need to allocate any extra memory (+1 for \0):
         size_t errLen = strlen("Operator received wrong amount of args - Expected: %d.");
         char *error = (char *)malloc((strlen("Operator received wrong amount of args - Expected: %d."))* sizeof(char));
         snprintf(error, errLen, "Operator received wrong amount of args - Expected: %d.", (int)get_operator(ptr)->ops_count);
         add_new_issue_to_arr(errors_array, ec, lc, error);
-
-        // Adding an error message:
-//        char * error = (char *)malloc(57*sizeof(char));
-//        snprintf(error, 57, "Operator received wrong amount of args, Expected: %d.",
-//                 (int)get_operator(ptr)->ops_count);
-//        add_new_issue_to_arr(errors_array, ec, lc, error);
         return;
     }
+    operator * p = get_operator(ptr);
+    perform_mov_op(ptr, head, pc, code_arr, errors_array, ec, lc);
+
     char *are_encoding = parse_are(determine_are(ptr)); // 0-1
     char *src_address = extract_src_address(ptr); // 2-3
     char *dest_address = extract_dest_address(ptr); // 4-5
@@ -217,7 +214,7 @@ int handle_symbol(symbol** head, unsigned long dc, char **ptr, issue ** errors_a
  * @param line A string with the content of the current line.
  * @param data_arr An array of data to which we would like to append stuff if relevant.
  */
-void handle_line(symbol **head, unsigned long *dc, const char *line, data **data_arr, issue **errors_array, int *ec, int lc) {
+void handle_line(symbol **head, unsigned long *pc, word **code_arr, unsigned long *dc, const char *line, word **data_arr, issue **errors_array, int *ec, int lc) {
     enum data_type curDataType;
     char *ptr = (char *)line;
 
@@ -235,7 +232,7 @@ void handle_line(symbol **head, unsigned long *dc, const char *line, data **data
         handle_data(strtok(ptr, ","), dc, data_arr);
         handle_string(strtok(NULL, ","), dc, data_arr);
     } else if (curDataType == op)
-        handle_operator(ptr, dc, data_arr, errors_array, ec, lc);
+        handle_operator(ptr, head, pc, code_arr, errors_array, ec, lc);
     else if (curDataType == iextern)
         handle_extern(head, ptr, errors_array, ec, lc);
     else if (curDataType == ientry)
@@ -246,9 +243,9 @@ void handle_line(symbol **head, unsigned long *dc, const char *line, data **data
 
 symbol* generate_symbols(char* content) {
     issue *errors_array = NULL;
-    unsigned long ic = 0, dc = 0;
+    unsigned long pc = 0, dc = 0;
     symbol* symbols_table_head = NULL;
-    data *data_arr = NULL, *code_arr = NULL;
+    word *data_arr = NULL, *code_arr = NULL;
     char * curLine = content, *nextLine = NULL;
     int lc = 1, ec = 0; // Lines counter
 
@@ -259,7 +256,7 @@ symbol* generate_symbols(char* content) {
         // Skipping comments in assembler file:
         if (!strstr(curLine, "//")){
             curLine = trim(curLine); // Trim whitespaces.
-            if (!is_empty(curLine)) handle_line(&symbols_table_head, &dc, curLine, &data_arr, &errors_array, &ec, lc);
+            if (!is_empty(curLine)) handle_line(&symbols_table_head, &pc, &code_arr, &dc, curLine, &data_arr, &errors_array, &ec, lc);
         }
         if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
         curLine = nextLine ? (nextLine+1) : NULL;

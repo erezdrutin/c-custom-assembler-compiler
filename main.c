@@ -1,11 +1,12 @@
 #include "utils/files.h"
 #include "utils/conversions.h"
-#include "utils/strings.h"
+#include "utils/string_utils.h"
 #include "stages/pre_assembly.h"
 #include <stdio.h>
 #include <string.h>
 #include "stages/assembler.h"
 #include "ds/operators.h"
+#include "ds/word.h"
 
 int validate_file()
 {
@@ -75,7 +76,21 @@ int main(int argc, char** argv)
 //    printf("%s", convert_to_custom_base(1026));
 
 //    printf("%s", read_file("macrotest.am"));
+
     printList(generate_symbols(read_file("assemblertest.am")));
+//    printf("%d", is_register("r9"));
+
+//    word * ptr = NULL;
+//    symbol *head = NULL;
+//    char *temp = "s1.2";
+//    unsigned long pc = 0;
+
+//    append(&head, "s1", 4, symbol_data);
+//    handle_immediate_addressing(&ptr, &pc, "#-5");
+//    handle_register_addressing(&ptr, &pc, "r1", "r4");
+//    handle_struct_addressing(head, &ptr, &pc, temp);
+
+//    print_data_arr(ptr, (size_t)pc);
 //    char str[100] = "STR: .string \"abcdef\"\nABC: .string \"ghijklmnop\"\nSIU: .string \"ghijklmnop\"";
 //    printList(generate_symbols(str));
 //    testos();

@@ -12,4 +12,6 @@ char* trim_multiline_string(const char* s);
 char* lspaces_append(const char* s, size_t spaces_count);
 size_t calc_chars_between_ch_and_token(const char* string, const char* token, char ch);
 int is_empty(const char *s);
+size_t count_char_in_string(const char *str, char ch);
+char * create_chars_str(char ch, size_t length);
 #endif //MAMAN14_STRINGS_H

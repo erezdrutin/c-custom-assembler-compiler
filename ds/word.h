@@ -1,0 +1,15 @@
+//
+// Created by Erez on 29/07/2022.
+//
+
+#ifndef MAMAN14_WORD_H
+#define MAMAN14_WORD_H
+#include <stdlib.h>
+#define WORD_SIZE 11
+typedef struct Word {
+    char value[WORD_SIZE];
+    unsigned int address;
+} word;
+void print_data_arr(word * arr, size_t dc);
+void add_new_word_to_arr(word ** arr, unsigned long *counter, char * val);
+#endif //MAMAN14_WORD_H

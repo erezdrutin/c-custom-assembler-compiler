@@ -50,6 +50,17 @@ void insertAfter(struct Node* prev_node, char* new_symbol, unsigned int new_addr
     prev_node->next = new_node;
 }
 
+symbol * search_list(symbol * ptr, char * value) {
+    while(ptr != NULL)
+    {
+        if (!strcmp(ptr->value, value))
+            return ptr;
+
+        ptr = ptr->next;
+    }
+    return NULL;
+}
+
 int list_exists(const symbol * ptr, char * value) {
     while(ptr != NULL)
     {

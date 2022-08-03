@@ -4,7 +4,7 @@
 .extern L3, BRUH, OK
 .extern W
 
-
+mov #-5, 3
 .data 6, -9, 15
 .data 7, -57, +17, 9
 XYZ: .data 3, -30, +21, 18

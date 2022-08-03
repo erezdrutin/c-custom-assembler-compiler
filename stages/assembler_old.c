@@ -11,7 +11,7 @@
 //
 ///**
 // * An enum to determine what to do at a given moment whilst parsing the ".am" file's content.
-// * Data types: symbol_type (label), sx (store x), ix (instruction x), op (operation), invalid (none of the other datatypes).
+// * Word types: symbol_type (label), sx (store x), ix (instruction x), op (operation), invalid (none of the other datatypes).
 // */
 //enum data_type { symbol_type, sdata, sstring, sstruct, iextern, ientry, op, invalid };
 //

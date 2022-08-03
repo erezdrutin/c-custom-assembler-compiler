@@ -1,6 +1,6 @@
 #include "conversions.h"
 #include <stdlib.h>
-#include "./strings.h"
+#include "./string_utils.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -48,6 +48,19 @@ void convert_to_10_bit_bin(size_t number, char * value)
         value[9 - i] = (number >> i) & 1 ? '1' : '0';
     }
     value[10] = '\0';
+}
+
+
+char * convert_to_x_bit_bin(size_t number, int len)
+{
+    int i;
+    char *value = (char *)malloc((len + 1) * (sizeof(char)));
+    for (i = len - 1; i >= 0; i--) {
+        // right shift & check the state of the first bit:
+        value[len - 1 - i] = (number >> i) & 1 ? '1' : '0';
+    }
+    value[len] = '\0';
+    return value;
 }
 
 /**

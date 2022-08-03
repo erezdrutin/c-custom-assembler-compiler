@@ -16,4 +16,6 @@ void append(symbol** head_ref, char* new_symbol, unsigned int new_address, enum 
 int append_unique(symbol** head_ref, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
                    issue **errors_array, int * ec, int lc);
 void printList(symbol *node);
+int list_exists(const symbol * ptr, char * value);
+symbol * search_list(symbol * ptr, char * value);
 #endif //MAMAN14_SYMBOL_H

@@ -6,7 +6,7 @@
 //#define MAMAN14_ASSEMBLER_OLD_H
 //#include <stdlib.h>
 //#include "../ds/symbol_type.h"
-////typedef struct Data {
+////typedef struct Word {
 ////    char value[11];
 ////    unsigned int address;
 ////} data;

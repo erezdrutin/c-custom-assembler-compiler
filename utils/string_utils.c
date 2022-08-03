@@ -1,4 +1,4 @@
-#include "strings.h"
+#include "string_utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -251,4 +251,17 @@ int is_empty(const char *s) {
         s++;
     }
     return 1;
+}
+
+/**
+ * A function in charge of counting how many times a certain character appears in a string.
+ * @param str A string to check.
+ * @param ch A character to search for.
+ * @return The amount of times ch appears in str.
+ */
+size_t count_char_in_string(const char *str, char ch) {
+    size_t i;
+    char *ptr = (char *)str;
+    for (i = 0; ptr[i]; ptr[i] == ch ? i++ : *ptr++);
+    return i;
 }

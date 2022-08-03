@@ -1,5 +1,5 @@
 #include "macros.h"
-#include "../utils/strings.h"
+#include "../utils/string_utils.h"
 #include <stdlib.h>
 #include <string.h>
 
