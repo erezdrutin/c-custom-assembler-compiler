@@ -368,7 +368,7 @@ int validate_errors(issue *errors_arr, int ec) {
 
 void assemble_machine_code(char *content) {
     issue *errors_array = NULL;
-    unsigned long pc = 0, dc = 0, mc = 0;
+    unsigned long pc = 100, dc = 0, mc = 100;
     symbol* symbols_table_head = NULL;
     word *data_arr = NULL, *code_arr = NULL, *mem_arr = NULL;
     int ec = 0; // Errors counter
@@ -390,6 +390,9 @@ void assemble_machine_code(char *content) {
     print_issues(errors_array, ec);
     printf("\n\n\n~~~~~~~~~~~~~~~~SYMBOLS:~~~~~~~~~~~~~~~\n");
     printList(symbols_table_head);
+
+    printf("\n\nSIU:\n\n");
+    write_file_special("EREZKING.ob", mem_arr, 100, mc);
 
 
 

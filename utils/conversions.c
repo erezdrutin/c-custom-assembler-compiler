@@ -1,8 +1,9 @@
 #include "conversions.h"
-#include <stdlib.h>
 #include "./string_utils.h"
+#include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
+#include <string.h>
+//#include <math.h>
 
 char symbols[32] = {'!','@','#','$','%','^','&','*','<','>','a',
                   'b','c','d','e','f','g','h','i','j','k','l',
@@ -33,6 +34,27 @@ char * convert_to_custom_base(size_t n) {
     return str_cat_copy(convert_to_custom_base(n / 32), symbol);
 }
 
+/**
+ * A function in charge of converting the received number to a custom 2 bits string (actual 3 chars including '\0').
+ * @param n A number to convert to the custom base with 2 bits.
+ * @return A pointer to a string that represents the number in the custom base.
+ */
+char * convert_to_custom_base_2_bit(size_t n) {
+    char *temp = convert_to_custom_base(n);
+    char *res = (char *)malloc((3) * sizeof(char));
+
+    if (strlen(temp) == 0) {
+        snprintf(res, 3, "%c%c", symbols[0], symbols[0]);
+    } else if (strlen(temp) == 1) {
+        snprintf(res, 3, "%c%c", symbols[0], temp[0]);
+    } else {
+        // Copy last 2 chars from result (the only relevant bits to display address in 0-255 range):
+        strncpy(res, (temp + strlen(temp) - 2), 2);
+    }
+
+    free(temp);
+    return res;
+}
 
 /**
  * A function in charge of converting a decimal number (long long) to its matching binary 10 bit representation.

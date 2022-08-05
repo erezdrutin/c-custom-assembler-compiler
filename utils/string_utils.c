@@ -265,3 +265,27 @@ size_t count_char_in_string(const char *str, char ch) {
     for (i = 0; ptr[i]; ptr[i] == ch ? i++ : *ptr++);
     return i;
 }
+
+/**
+ * A function in charge of reversing a string.
+ * @param str A string to reverse.
+ * @return The reversed string.
+ */
+char *strrev(char *str)
+{
+    if (!str || ! *str)
+        return str;
+
+    int i = (int)strlen(str) - 1, j = 0;
+
+    char ch;
+    while (i > j)
+    {
+        ch = str[i];
+        str[i] = str[j];
+        str[j] = ch;
+        i--;
+        j++;
+    }
+    return str;
+}

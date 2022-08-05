@@ -14,4 +14,5 @@ size_t calc_chars_between_ch_and_token(const char* string, const char* token, ch
 int is_empty(const char *s);
 size_t count_char_in_string(const char *str, char ch);
 char * create_chars_str(char ch, size_t length);
+char *strrev(char *str);
 #endif //MAMAN14_STRINGS_H

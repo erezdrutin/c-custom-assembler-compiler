@@ -1,6 +1,7 @@
+#include "files.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "files.h"
+#include <string.h>
 
 /**
  * Checks if a file exists or not.
@@ -57,7 +58,7 @@ char* read_file(char* filename) {
 
 
 
-int write_file(char* filename, char* content){
+int write_file(char* filename, char* content) {
     FILE *fp;
     // Open file in write mode
     fp = fopen(filename,"w+");
@@ -70,7 +71,31 @@ int write_file(char* filename, char* content){
     else
     {
         printf("Failed to open the file\n");
+        return 0;
     }
     // Close the file
     fclose(fp);
+    return 1;
+}
+
+int write_file_special(char *filename, word *arr, unsigned long start, unsigned long len) {
+    FILE *fp = NULL;
+    char *content = NULL;
+    int lc = 0;
+
+    // Open file in write mode
+    unsigned long i;
+    for (i = start; i < len; i++) {
+        if (content == NULL)
+            content = (char *)malloc((OB_FILE_ROW_LEN + 1) * sizeof(char));
+        else
+            content = (char *)realloc(content, (strlen(content) + OB_FILE_ROW_LEN + 1) * sizeof(char));
+        snprintf(content + (lc++ * (OB_FILE_ROW_LEN + 1)), OB_FILE_ROW_LEN + 2, "%s\t%s\n", convert_to_custom_base_2_bit(arr[i].address),
+                 convert_to_custom_base_2_bit(convert_10_bit_bin_to_decimal(arr[i].value)));
+    }
+    // Removing extra '\n' and replacing it with '\0':
+    content = (char *)realloc(content, (strlen(content)) * sizeof(char));
+    *(content + strlen(content) - 1) = '\0';
+    write_file(filename, content);
+    return 1;
 }
