@@ -11,9 +11,9 @@ operator ops[] = {
         {"cmp", two_ops},
         {"add", two_ops},
         {"sub", two_ops},
-        {"lea", two_ops},
         {"not", one_op},
         {"clr", one_op},
+        {"lea", two_ops},
         {"inc", one_op},
         {"dec", one_op},
         {"jmp", one_op},
@@ -25,7 +25,24 @@ operator ops[] = {
         {"hlt", zero_ops},
 };
 
-
+operatorMetaData opsMetaData[] = {
+        {&ops[0], {immediate_addressing, direct_addressing, struct_addressing, register_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[1], {immediate_addressing, direct_addressing, struct_addressing, register_addressing}, {immediate_addressing,direct_addressing, struct_addressing, register_addressing}},
+        {&ops[2], {immediate_addressing, direct_addressing, struct_addressing, register_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[3], {immediate_addressing, direct_addressing, struct_addressing, register_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[4], {invalid_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[5], {invalid_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[6], {direct_addressing, struct_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[7], {invalid_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[8], {invalid_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[9], {invalid_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[10], {invalid_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[11], {invalid_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[12], {invalid_addressing}, {immediate_addressing, direct_addressing, struct_addressing, register_addressing}},
+        {&ops[13], {invalid_addressing}, {direct_addressing, struct_addressing, register_addressing}},
+        {&ops[14], {invalid_addressing}, {invalid_addressing}},
+        {&ops[15], {invalid_addressing}, {invalid_addressing}}
+};
 
 //const char *ops[16] = { "mov", "cmp", "add", "sub", "not", "clr", "lea", "inc",
 //                        "dec", "jmp", "bne", "get", "prn", "jsr", "rts", "hlt"};
@@ -52,11 +69,27 @@ int get_operator_index(char *str) {
  * @param str A string to search for ops in it.
  * @return A pointer to an operator struct (if there is a matching one, otherwise - NULL).
  */
-operator * get_operator (char *str) {
+operator * get_operator(char *str) {
     int len = (size_t) sizeof(ops) / sizeof(ops[0]), i;
     for (i = 0; i < len; ++i) {
         if (strstr(str, ops[i].name) || !strcmp(str, ops[i].name)) {
             return &ops[i];
+        }
+    }
+    return NULL;
+}
+
+/**
+ * A function in charge of fetching the matching meta data for the received operator.
+ * The association is done by the received operator.
+ * @param ptr A pointer to an operator struct.
+ * @return A pointer to a meta data struct matching the received operator.
+ */
+operatorMetaData * get_operator_meta_data(operator *ptr) {
+    int len = (size_t) sizeof(opsMetaData) / sizeof(opsMetaData[0]), i;
+    for (i = 0; i < len; i++) {
+        if (!strcmp(ptr->name, ops[i].name)) {
+            return &opsMetaData[i];
         }
     }
     return NULL;
@@ -70,26 +103,54 @@ operator * get_operator (char *str) {
  * @param op An operand to validate.
  * @return True (1) / False (0).
  */
-int validate_operator_usage(const char *str) {
+int validate_operator_usage_in_str(const char *str) {
     // Duplicating the string & counting how many args were passed:
-    char *ptr = strdup(str), *token = NULL;
+    char *ptr = trim((char *)str), *token = NULL;
     int args = 0, res;
     operator *temp = get_operator(ptr);
     // If we received an operator in which we expect to get 0 parameters:
     if (temp->ops_count == 0) {
-        if (!strcmp(str, temp->name)) return 1;
+        if (!strcmp(ptr, temp->name)) return 1;
         return 0;
     }
     // Fetching "first" part of string & Counting how many comma separated parts are in the string:
+    ptr = strdup(trim(ptr + strlen(temp->name)));
     token = strtok(ptr, ",");
-    while( token != NULL ) {
+    if (temp -> ops_count == 1 && token != NULL) args++;
+    while( temp->ops_count == 2 && token != NULL) {
         args++;
         token = strtok(NULL, " ");
     }
 
     free(ptr);
     // Validate that the amount of args matches our expectation + that the received string != the found operator:
-    return args == temp->ops_count && strcmp((char *)str, temp->name) != 0;
+    return args == temp->ops_count;
+}
+
+
+/**
+ * A function in charge of validating the addressing methods used when using a certain operator.
+ * @param src_am The addressing method for the src operand.
+ * @param dest_am The addressing method for the dest operand.
+ * @param op_md The operator metadata struct.
+ * @return True (1) if the addressing methods are valid or False (0) if not.
+ */
+int validate_operator_am_usage(enum addressing_methods src_am, enum addressing_methods dest_am, operatorMetaData *op_md) {
+    int i, src_flag = 0, dest_flag = 0;
+    for (i = 0; i < 4 && !(src_flag && dest_flag); i++) {
+        // Validating addressing methods for both src & dest:
+        if (op_md->src_am[i] == src_am)
+            src_flag = 1;
+        if (op_md->dest_am[i] == dest_am)
+            dest_flag = 1;
+        // If we expected an invalid addressing method but received another addressing method - return 0
+        // (initializing src with 0 is enough in this case):
+        if ((op_md->src_am[i] == invalid_addressing && src_am != invalid_addressing) || (op_md->dest_am[i] == invalid_addressing && dest_am != invalid_addressing)) {
+            src_flag = 0;
+            break;
+        }
+    }
+    return src_flag && dest_flag;
 }
 
 void handle_symbol_in_op(operator *op, char *str, symbol ** head, word **code_arr) {
@@ -264,7 +325,7 @@ enum addressing_methods determine_addressing_method(char *str) {
  * @param pc Index in the code_arr.
  * @param ptr A pointer to the relevant word.
  */
-void handle_immediate_addressing(word **code_arr, unsigned long *pc, char *ptr) {
+void handle_immediate_addressing(word **code_arr, unsigned long *pc, char *ptr, enum run_type rt) {
     char *res = (char *)malloc(sizeof(char) * WORD_SIZE);
     // Skipping the #:
     if (isNumber(ptr + 1)) {
@@ -273,7 +334,7 @@ void handle_immediate_addressing(word **code_arr, unsigned long *pc, char *ptr) 
         return;
     }
     // Allocating a new word in the code array & freeing res:
-    add_new_word_to_arr(code_arr, pc, res);
+    add_or_update_word_in_arr(code_arr, pc, res, rt);
     free(res);
 }
 
@@ -287,16 +348,16 @@ void handle_immediate_addressing(word **code_arr, unsigned long *pc, char *ptr) 
  * @param pc Index in the code_arr.
  * @param str A pointer to the string contains a symbol.
  */
-void handle_direct_addressing(symbol *head, word **code_arr, unsigned long *pc, char *ptr) {
+void handle_direct_addressing(symbol *head, word **code_arr, unsigned long *pc, char *ptr, enum run_type rt) {
     char *res = (char *)malloc(sizeof(char) * WORD_SIZE);
 
     if (list_exists(head, ptr)) {
         symbol *temp = search_list(head, ptr);
         snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(temp->address, 8), "10");
-        add_new_word_to_arr(code_arr, pc, res);
+        add_or_update_word_in_arr(code_arr, pc, res, rt);
     } else {
         // Appending a sequence of 10 Xs to the code_arr:
-        add_new_word_to_arr(code_arr, pc, create_chars_str('X', WORD_SIZE));
+        add_or_update_word_in_arr(code_arr, pc, create_chars_str('X', WORD_SIZE), rt);
     }
     free(res);
 }
@@ -311,20 +372,19 @@ void handle_direct_addressing(symbol *head, word **code_arr, unsigned long *pc, 
  * @param pc Index in the code_arr.
  * @param str A pointer to the string contains the attempt to access a struct field.
  */
-void handle_struct_addressing(symbol * head, word **code_arr, unsigned long *pc, const char *str) {
+void handle_struct_addressing(symbol * head, word **code_arr, unsigned long *pc, const char *str, enum run_type rt) {
     char *ptr = strdup(str), *token, *st, *ind;
-    char *first = (char *)malloc(sizeof(char) * WORD_SIZE), *second = (char *)malloc(sizeof(char) * WORD_SIZE);
+    char *second = (char *)malloc(sizeof(char) * WORD_SIZE);
     token = strtok(ptr, ".");
     st = strdup(trim(token));
     token = strtok(NULL, ".");
     ind = strdup(trim(token));
 
     // Handle the first part of the struct as a direct addressing (as a label):
-    handle_direct_addressing(head, code_arr, pc, st);
+    handle_direct_addressing(head, code_arr, pc, st, rt);
     // Allocating a new word in the code array & freeing first, second & ptr:
     snprintf(second, WORD_SIZE, "%s%s", convert_to_x_bit_bin((size_t)(*ind - '0'), 8), "00");
-    add_new_word_to_arr(code_arr, pc, second);
-    free(first);
+    add_or_update_word_in_arr(code_arr, pc, second, rt);
     free(second);
     free(ptr);
 }
@@ -338,58 +398,108 @@ void handle_struct_addressing(symbol * head, word **code_arr, unsigned long *pc,
  * @param ptr A pointer to the first word (if exists).
  * @param ptr2 A pointer to the second word (if exists).
  */
-void handle_register_addressing(word **code_arr, unsigned long *pc, const char *ptr, const char *ptr2) {
+void handle_register_addressing(word **code_arr, unsigned long *pc, const char *ptr, const char *ptr2, enum run_type rt) {
     char *res = (char *)malloc(sizeof(char) * WORD_SIZE);
     if (ptr != NULL && ptr2 != NULL) {
-        snprintf(res, WORD_SIZE, "%s%s%s", convert_to_x_bit_bin(ptr[strlen(ptr) - 1], 4),
-                 convert_to_x_bit_bin(ptr2[strlen(ptr2) - 1], 4), "00");
+        snprintf(res, WORD_SIZE, "%s%s%s", convert_to_x_bit_bin(ptr[strlen(ptr) - 1] - '0', 4),
+                 convert_to_x_bit_bin(ptr2[strlen(ptr2) - 1] - '0', 4), "00");
     } else if (ptr != NULL) {
-        snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(ptr[strlen(ptr) - 1], 8), "00");
-    } else {
+        snprintf(res, WORD_SIZE, "%s%s%s", convert_to_x_bit_bin(ptr[strlen(ptr) - 1] - '0', 4), "0000", "00");
+    } else if (ptr2 != NULL) {
+        snprintf(res, WORD_SIZE, "%s%s%s", "0000", convert_to_x_bit_bin(ptr2[strlen(ptr2) - 1] - '0', 4), "00");
+    }
+    else {
         free(res);
         return;
     }
     // Allocating a new word in the code array & freeing res:
-    add_new_word_to_arr(code_arr, pc, res);
+    add_or_update_word_in_arr(code_arr, pc, res, rt);
     free(res);
 }
 
-void handle_addressing_method(symbol ** head, unsigned long *pc, word **code_arr, char *ptr, enum addressing_methods method) {
+void handle_addressing_method(symbol ** head, unsigned long *pc, word **code_arr, char *ptr, enum addressing_methods method, enum operand_type ot, enum run_type rt) {
     if (method == immediate_addressing)
-        handle_immediate_addressing(code_arr, pc, ptr);
+        handle_immediate_addressing(code_arr, pc, ptr, rt);
     else if (method == direct_addressing)
-        handle_direct_addressing(*head, code_arr, pc, ptr);
+        handle_direct_addressing(*head, code_arr, pc, ptr, rt);
     else if (method == struct_addressing)
-        handle_struct_addressing(*head, code_arr, pc, ptr);
-    else if (method == register_addressing)
-        handle_register_addressing(code_arr, pc, ptr, NULL);
+        handle_struct_addressing(*head, code_arr, pc, ptr, rt);
+    else if (method == register_addressing) {
+        if (ot == src_operand) handle_register_addressing(code_arr, pc, ptr, NULL, rt);
+        else handle_register_addressing(code_arr, pc, NULL, ptr, rt);
+    }
     else {
 //        add_new_issue_to_arr();
     }
 }
 
-void encode_two_ops_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, operator *op) {
+void encode_opless_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, operator *op, enum run_type rt) {
     char *cmd = (char *)malloc(WORD_SIZE * sizeof(char));
-    char *src = strdup(trim(strtok(ptr, ",")));
+
+    if (!validate_operator_am_usage(invalid_addressing, invalid_addressing, get_operator_meta_data(op))) {
+        free(cmd);
+        // Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0')
+        size_t errLen = strlen("Invalid usage of addressing methods combined with the operator %s.") + 2;
+        char *error = (char *)malloc(errLen * sizeof(char));
+        snprintf(error, errLen, "Invalid usage of addressing methods combined with the operator %s.", op->name);
+        add_new_issue_to_arr(errors_array, ec, lc, error);
+        return;
+    }
+
+    // Convert operand addressing method & operation addressing method to bin:
+    char *operator_addr = convert_to_x_bit_bin(get_operator_index(op->name), 4);
+
+    // Commands are encoded with 00 as A, R, E fields + SRC is encoded as "00" since it's missing:
+    snprintf(cmd, WORD_SIZE, "%s%s%s%s", operator_addr, "00", "00", "00");
+    add_or_update_word_in_arr(code_arr, pc, cmd, rt);
+}
+
+
+void encode_one_op_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, operator *op, enum run_type rt) {
+    char *cmd = (char *)malloc(WORD_SIZE * sizeof(char));
+    char *operand = strdup(trim(ptr + strlen(op->name)));
+    enum addressing_methods operand_am = determine_addressing_method(operand);
+    if (!validate_operator_am_usage(invalid_addressing, operand_am, get_operator_meta_data(op))) {
+//        free(cmd);
+        free(operand);
+        // Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0')
+        size_t errLen = strlen("Invalid usage of addressing methods combined with the operator %s.") + 2;
+        char *error = (char *)malloc(errLen * sizeof(char));
+        snprintf(error, errLen, "Invalid usage of addressing methods combined with the operator %s.", op->name);
+        add_new_issue_to_arr(errors_array, ec, lc, error);
+        return;
+    }
+
+    // Convert operand addressing method & operation addressing method to bin:
+    char *operand_addr = convert_to_x_bit_bin(operand_am, 2);
+    char *operator_addr = convert_to_x_bit_bin(get_operator_index(op->name), 4);
+
+    // Commands are encoded with 00 as A, R, E fields + SRC is encoded as "00" since it's missing:
+    snprintf(cmd, WORD_SIZE, "%s%s%s%s", operator_addr, "00", operand_addr, "00");
+    add_or_update_word_in_arr(code_arr, pc, cmd, rt);
+
+    // Handle relevant addressing method for the current operation:
+    handle_addressing_method(head, pc, code_arr, operand, operand_am, src_operand, rt);
+}
+
+
+void encode_two_ops_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, operator *op, enum run_type rt) {
+    char *cmd = (char *)malloc(WORD_SIZE * sizeof(char));
+    char *src = strdup(trim(strtok(ptr + strlen(op->name), ",")));
     char *dest = strdup(trim(strtok(NULL, ",")));
     enum addressing_methods src_am = determine_addressing_method(src);
     enum addressing_methods dest_am = determine_addressing_method(dest);
 
-    // Convert command to binary and append it to code_arr:
-    snprintf(cmd, WORD_SIZE, "%s%s%s%s", convert_to_x_bit_bin(get_operator_index(op->name), 4),
-             convert_to_x_bit_bin(dest_am, 2), convert_to_x_bit_bin(src_am, 2), "00");
-    add_new_word_to_arr(code_arr, pc, cmd);
-
-    // If we received anything other than immediate_addressing, append an info word for it:
-    if (src_am != immediate_addressing) {
-        if (list_exists(*head, src)) {
-//            add_new_word_to_arr(code_arr, pc, conve);
-        }
-    }
-
-    // Both are registers:
-    if (src_am == register_addressing && dest_am == register_addressing) {
-        handle_register_addressing(code_arr, pc, src, dest);
+    if (!validate_operator_am_usage(src_am, dest_am, get_operator_meta_data(op))) {
+        free(cmd);
+        free(src);
+        free(dest);
+        // Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0')
+        size_t errLen = strlen("Invalid usage of addressing methods combined with the operator %s.");
+        char *error = (char *)malloc(errLen * sizeof(char));
+        snprintf(error, errLen, "Invalid usage of addressing methods combined with the operator %s.", op->name);
+        add_new_issue_to_arr(errors_array, ec, lc, error);
+        return;
     }
 
     char *src_addr = convert_to_x_bit_bin(src_am, 2);
@@ -397,80 +507,26 @@ void encode_two_ops_cmd(char *ptr, symbol ** head, unsigned long *pc, word **cod
     char *op_addr = convert_to_x_bit_bin(get_operator_index(op->name), 4);
 
     // Commands are encoded with 00 as A, R, E fields:
-    snprintf(cmd, sizeof(cmd), "%s%s%s%s", op_addr, dest_addr, src_addr, "00");
-}
+    snprintf(cmd, WORD_SIZE, "%s%s%s%s", op_addr, src_addr, dest_addr, "00");
+    add_or_update_word_in_arr(code_arr, pc, cmd, rt);
 
-
-void encode_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc) {
-    operator *op = get_operator(ptr);
-    if (op->ops_count == 2) {
-        char res[10];
-        char *src = strdup(trim(strtok(ptr, ",")));
-        char *dest = strdup(trim(strtok(NULL, ",")));
-
-        char *src_addr = convert_to_x_bit_bin(determine_addressing_method(src), 2);
-        char *dest_addr = convert_to_x_bit_bin(determine_addressing_method(dest), 2);
-        char *op_addr = convert_to_x_bit_bin(get_operator_index(op->name), 4);
-        snprintf(res, sizeof(res), "%s%s%s%s", op_addr, dest_addr, src_addr, "XX");
+    if (src_am == dest_am && src_am == register_addressing) {
+        handle_register_addressing(code_arr, pc, src, dest, rt);
+    } else {
+        handle_addressing_method(head, pc, code_arr, src, src_am, src_operand, rt);
+        handle_addressing_method(head, pc, code_arr, dest, dest_am, dest_operand, rt);
     }
 }
 
 
-void perform_mov_op(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc) {
+void encode_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt) {
     operator *op = get_operator(ptr);
-    if (op->ops_count == 2) {
-        char res[WORD_SIZE];
-
-//        char target[ SIZE ];
-// .. ..
-//        snprintf( target, sizeof( target ), "%s%s%s", str1, str2, str3 );
-//        char *src = strdup(trim(strtok(ptr, ",")));
-//        char *dest = strdup(trim(strtok(NULL, ",")));
-        char *src_addr = convert_to_x_bit_bin(determine_addressing_method(trim(strtok(ptr, ","))), 2);
-        char *dest_addr = convert_to_x_bit_bin(determine_addressing_method(trim(strtok(NULL, ","))), 2);
-        char *op_addr = convert_to_x_bit_bin(get_operator_index(op->name), 4);
-        snprintf(res, sizeof(res), "%s%s%s%s", op_addr, dest_addr, src_addr, "XX");
-        printf("src_addr: %s, dest_addr: %s, op_addr: %s\nfinal: %s\n", src_addr, dest_addr, op_addr, res);
+    ptr = trim(ptr);
+    if (op->ops_count == two_ops) {
+        encode_two_ops_cmd(ptr, head, pc, code_arr, errors_array, ec, lc, op, rt);
+    } else if (op->ops_count == one_op) {
+        encode_one_op_cmd(ptr, head, pc, code_arr, errors_array, ec, lc, op, rt);
+    } else {
+        encode_opless_cmd(ptr, head, pc, code_arr, errors_array, ec, lc, op, rt);
     }
-
-//    ptr = ptr + strlen("mov") + 1;
-//    char *src = strdup(trim(strtok(ptr, ",")));
-//    char *dest = strdup(trim(strtok(NULL, ",")));
-//
-//
-//    char *src_addr = convert_to_x_bit_bin(determine_addressing_method(src), 2);
-//    char *dest_addr = convert_to_x_bit_bin(determine_addressing_method(dest), 2);
-//    char *opcode_addr = determine_addressing_method()
-
-//    if (list_exists(*head, src)) handle_symbol_in_op(src);
-//    if (strchr(src, '.')) handle_struct_in_op(src);
-//    if (is_register(src)) handle_register_in_op(src);
-
-//    printf("src: %s, dest: %s\n", src, dest);
-//    printf("srcAM: %s, destAM: %s\n", convert_to_x_bit_bin(src_am, 2), convert_to_x_bit_bin(dest_am, 2));
-
-
-
-//    ptr = ptr + strlen(".entry") + 1;
-//    char *symbolName = NULL, *token = strtok(ptr, ",");
-//    // Appending each symbol to the symbols list:
-//    while (token != NULL) {
-//        symbolName = (char *)strdup(token);
-//        append_unique(head, symbolName, 0, symbol_entry, errors_array, ec, lc);
-//        token = strtok(NULL, ",");
-//    }
-//
-//
-//    while (*ptr) { // While there are more characters to process...
-//        if ( isdigit(*ptr) || ( (*ptr=='-'||*ptr=='+') && isdigit(*(ptr+1)) )) {
-//            word temp;
-//            convert_to_10_bit_bin(strtoll(ptr, &ptr, 10), temp.value);
-//            temp.address = (*dc);
-//            *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
-//            (*data_arr)[(*dc)++] = temp;
-//            ptr = strchr(ptr, ',') ? strchr(ptr, ',') : strchr(ptr, '\0');
-//        } else {
-//            ptr++;
-//        }
-//    }
 }

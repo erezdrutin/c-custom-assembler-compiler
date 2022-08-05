@@ -47,14 +47,17 @@ enum data_type parse_str(char* str) {
  * @param dc The data counter.
  * @param data_arr An array of data structs.
  */
-void handle_data(char *ptr, unsigned long *dc, word **data_arr) {
+void handle_data(char *ptr, unsigned long *dc, word **data_arr, enum run_type rt) {
     while (*ptr) { // While there are more characters to process...
         if ( isdigit(*ptr) || ( (*ptr=='-'||*ptr=='+') && isdigit(*(ptr+1)) )) {
-            word temp;
-            convert_to_10_bit_bin(strtoll(ptr, &ptr, 10), temp.value);
-            temp.address = (*dc);
-            *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
-            (*data_arr)[(*dc)++] = temp;
+            if (rt == second_run_type) (*dc)++;
+            else {
+                word temp;
+                convert_to_10_bit_bin(strtoll(ptr, &ptr, 10), temp.value);
+                temp.address = (*dc);
+                *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
+                (*data_arr)[(*dc)++] = temp;
+            }
             ptr = strchr(ptr, ',') ? strchr(ptr, ',') : strchr(ptr, '\0');
         } else {
             ptr++;
@@ -70,18 +73,32 @@ void handle_data(char *ptr, unsigned long *dc, word **data_arr) {
  * @param dc The counter of the data.
  * @param data_arr An array of data to which we would like to append stuff if relevant.
  */
-void handle_string(char *ptr, unsigned long *dc, word **data_arr) {
+void handle_string(char *ptr, unsigned long *dc, word **data_arr, enum run_type rt) {
     ptr = strchr(ptr, '"') + 1;
     while (*ptr != '"' && *ptr) {
         if (isalnum(*ptr)) {
-            word temp;
-            convert_to_10_bit_bin((size_t)*ptr, temp.value);
-            temp.address = (*dc);
-            *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
-            (*data_arr)[(*dc)++] = temp;
+            if (rt == second_run_type) (*dc)++;
+            else {
+                word temp;
+                convert_to_10_bit_bin((size_t)*ptr, temp.value);
+                temp.address = (*dc);
+                *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
+                (*data_arr)[(*dc)++] = temp;
+            }
         }
         ptr++;
     }
+
+    // Inserting an extra word to the data array that resembles the end of the string:
+    if (rt == second_run_type) {
+        (*dc)++;
+        return;
+    }
+    word temp;
+    convert_to_10_bit_bin(0, temp.value);
+    temp.address = (*dc);
+    *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
+    (*data_arr)[(*dc)++] = temp;
 }
 
 enum are_encoding determine_are(char *ptr) {
@@ -98,8 +115,8 @@ char *extract_dest_address(char *ptr) {
 
 
 // Check for invalid usage of oprator (i.e
-void handle_operator(char *ptr, symbol **head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc) {
-    if (!validate_operator_usage(ptr)) {
+void handle_operator(char *ptr, symbol **head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt) {
+    if (!validate_operator_usage_in_str(ptr)) {
         // ops_count is a single digit number, meaning it will have 1 char, therefore it will replace the "%d" and we
         // don't need to allocate any extra memory (+1 for \0):
         size_t errLen = strlen("Operator received wrong amount of args - Expected: %d.");
@@ -108,25 +125,8 @@ void handle_operator(char *ptr, symbol **head, unsigned long *pc, word **code_ar
         add_new_issue_to_arr(errors_array, ec, lc, error);
         return;
     }
-    operator * p = get_operator(ptr);
-    perform_mov_op(ptr, head, pc, code_arr, errors_array, ec, lc);
-
-    char *are_encoding = parse_are(determine_are(ptr)); // 0-1
-    char *src_address = extract_src_address(ptr); // 2-3
-    char *dest_address = extract_dest_address(ptr); // 4-5
-    int opcode = get_operator_index(ptr); // 6-9
-
-//    ptr = strchr(ptr, '"') + 1;
-//    while (*ptr != '"' && *ptr) {
-//        if (isalnum(*ptr)) {
-//            data temp;
-//            convert_to_10_bit_bin((size_t)*ptr, temp.value);
-//            temp.address = (*dc);
-//            *data_arr = (data *)realloc(*data_arr, sizeof(data)*((*dc) + 1));
-//            (*data_arr)[(*dc)++] = temp;
-//        }
-//        ptr++;
-//    }
+    // In any other case - encode the command and store it in the code array:
+    encode_cmd(ptr, head, pc, code_arr, errors_array, ec, lc, rt);
 }
 
 
@@ -181,7 +181,24 @@ enum symbol_type get_symbol_type(const char *str) {
     char *ptr = (char *)str;
     enum data_type curDataType = parse_str(ptr);
     // Returning symbol_data if .data / .string / .struct in the string, or symbol_code if any op in string:
-    return (curDataType == sdata || curDataType == sstring || curDataType == sstruct) ? symbol_data : curDataType == op ? symbol_code : symbol_invalid;
+    if (curDataType == sdata || curDataType == sstring || curDataType == sstruct) return symbol_data;
+    else if (curDataType == op) return symbol_code;
+    else if (curDataType == iextern) return symbol_extern;
+    else if (curDataType == ientry) return symbol_entry;
+    return symbol_invalid;
+}
+
+int handle_append_symbol_to_symbols_arr(symbol** head, unsigned long extc, unsigned long entc, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc, char *symbolName) {
+    enum symbol_type st = get_symbol_type(*ptr);
+    if (st == symbol_data)
+        return append_unique(head, symbolName, dc, symbol_data, errors_array, ec, lc);
+    else if (st == symbol_code)
+        return append_unique(head, symbolName, pc, symbol_code, errors_array, ec, lc);
+    else if (st == symbol_entry)
+        return append_unique(head, symbolName, entc, symbol_entry, errors_array, ec, lc);
+    else if (st == symbol_extern)
+        return append_unique(head, symbolName, extc, symbol_extern, errors_array, ec, lc);
+    return 0;
 }
 
 /**
@@ -190,19 +207,48 @@ enum symbol_type get_symbol_type(const char *str) {
  * @param dc The counter of the data.
  * @param ptr A pointer to the current line.
  */
-int handle_symbol(symbol** head, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc) {
+int handle_symbol(symbol** head, unsigned long extc, unsigned long entc, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc) {
     unsigned short symbolLen;
     char *symbolName = NULL;
-    enum symbol_type curSymbolType = get_symbol_type(*ptr);
     // Checking if the current line contains a symbol_type or not:
+
     if (parse_str(*ptr) == symbol_dt) {
         // Allocating memory to store the symbol_type & adding it to the symbols list:
         symbolLen = (unsigned short)(strchr(*ptr, ':') - *ptr);
         symbolName = (char *)strndup(*ptr, symbolLen);
         *ptr += symbolLen + 1;
-        return append_unique(head, symbolName, dc, get_symbol_type(*ptr), errors_array, ec, lc);
+        return handle_append_symbol_to_symbols_arr(head, 0, 0, pc, dc, ptr, errors_array, ec, lc, symbolName);
     }
     return 1;
+}
+
+void handle_line_second_run(symbol **head, unsigned long *mc, word **mem_arr, int lc, const char *line, issue **errors_array, int *ec) {
+    char *ptr = (char *)line;
+    enum run_type rt = second_run_type;
+    enum data_type curDataType = parse_str(ptr);
+    // Skipping any symbols (because we already declared them in the 1st run):
+    if (curDataType == symbol_dt)
+        ptr = strchr(ptr, ':') + 1;
+
+
+    // Only handling code "segment" (operations related fields that weren't initialized in the 1st run):
+    curDataType = parse_str(ptr);
+    if (curDataType == sstring)
+        handle_string(ptr, mc, mem_arr, rt);
+    else if (curDataType == sdata)
+        handle_data(ptr, mc, mem_arr, rt);
+    else if (curDataType == sstruct) {
+        // Handling data up to the first comma & string after the first comma:
+        handle_data(strtok(ptr, ","), mc, mem_arr, rt);
+        handle_string(strtok(NULL, ","), mc, mem_arr, rt);
+    } else if (curDataType == op)
+        handle_operator(ptr, head, mc, mem_arr, errors_array, ec, lc, rt);
+    else if (curDataType == iextern)
+        handle_extern(head, ptr, errors_array, ec, lc);
+    else if (curDataType == ientry)
+        handle_entry(head, ptr, errors_array, ec, lc);
+    else
+        add_new_issue_to_arr(errors_array, ec, lc, "Invalid instruction.");
 }
 
 
@@ -214,25 +260,26 @@ int handle_symbol(symbol** head, unsigned long dc, char **ptr, issue ** errors_a
  * @param line A string with the content of the current line.
  * @param data_arr An array of data to which we would like to append stuff if relevant.
  */
-void handle_line(symbol **head, unsigned long *pc, word **code_arr, unsigned long *dc, const char *line, word **data_arr, issue **errors_array, int *ec, int lc) {
+void handle_line(symbol **head, unsigned long *pc, word **code_arr, unsigned long *dc, const char *line, word **data_arr, issue **errors_array, int *ec, int lc, enum run_type rt) {
     enum data_type curDataType;
     char *ptr = (char *)line;
 
     // Handle symbols (if there are any):
-    if (!handle_symbol(head, *dc, &ptr, errors_array, ec, lc)) return;
+    // At the end of the run we should replace the addresses stored in this method based on the symbol type:
+    if (!handle_symbol(head, 0, 0, *pc, *dc, &ptr, errors_array, ec, lc)) return;
 
     // Fetch the actual data type of the row (after "skipping" the symbol_type part):
     curDataType = parse_str(ptr);
     if (curDataType == sstring)
-        handle_string(ptr, dc, data_arr);
+        handle_string(ptr, dc, data_arr, rt);
     else if (curDataType == sdata)
-        handle_data(ptr, dc, data_arr);
+        handle_data(ptr, dc, data_arr, rt);
     else if (curDataType == sstruct) {
         // Handling data up to the first comma & string after the first comma:
-        handle_data(strtok(ptr, ","), dc, data_arr);
-        handle_string(strtok(NULL, ","), dc, data_arr);
+        handle_data(strtok(ptr, ","), dc, data_arr, rt);
+        handle_string(strtok(NULL, ","), dc, data_arr, rt);
     } else if (curDataType == op)
-        handle_operator(ptr, head, pc, code_arr, errors_array, ec, lc);
+        handle_operator(ptr, head, pc, code_arr, errors_array, ec, lc, rt);
     else if (curDataType == iextern)
         handle_extern(head, ptr, errors_array, ec, lc);
     else if (curDataType == ientry)
@@ -245,7 +292,7 @@ symbol* generate_symbols(char* content) {
     issue *errors_array = NULL;
     unsigned long pc = 0, dc = 0;
     symbol* symbols_table_head = NULL;
-    word *data_arr = NULL, *code_arr = NULL;
+    word *data_arr = NULL, *code_arr = NULL, *mem_arr = NULL;
     char * curLine = content, *nextLine = NULL;
     int lc = 1, ec = 0; // Lines counter
 
@@ -256,15 +303,102 @@ symbol* generate_symbols(char* content) {
         // Skipping comments in assembler file:
         if (!strstr(curLine, "//")){
             curLine = trim(curLine); // Trim whitespaces.
-            if (!is_empty(curLine)) handle_line(&symbols_table_head, &pc, &code_arr, &dc, curLine, &data_arr, &errors_array, &ec, lc);
+            if (!is_empty(curLine)) handle_line(&symbols_table_head, &pc, &code_arr, &dc, curLine, &data_arr, &errors_array, &ec, lc, first_run_type);
         }
         if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
         curLine = nextLine ? (nextLine+1) : NULL;
         lc++;
     }
-    print_data_arr(data_arr, dc);
+    printf("\n\n\n~~~~~~~~~~~~~~~~MERGED:~~~~~~~~~~~~~~~~\n");
+    print_data_arr(append_word_arr(&code_arr, pc, &data_arr, dc), pc + dc);
+
+    printf("\n\n\n~~~~~~~~~~~~~~~~ERRORS:~~~~~~~~~~~~~~~~\n");
     print_issues(errors_array, ec);
+    printf("\n\n\n~~~~~~~~~~~~~~~~SYMBOLS:~~~~~~~~~~~~~~~~\n");
     return symbols_table_head;
+}
+
+
+void first_run(const char *content, symbol **head, unsigned long *pc, word **code_arr, unsigned long *dc, word **data_arr, issue **errors_array, int *ec) {
+    char *ptr = strdup(content), *curLine = ptr, *nextLine = NULL;
+    int lc = 1; // Lines counter
+
+    while(curLine)
+    {
+        nextLine = strchr(curLine, '\n');
+        if (nextLine) *nextLine = '\0';  // temporarily terminate the current line
+        // Skipping comments in assembler file:
+        if (!strstr(curLine, "//")){
+            curLine = trim(curLine); // Trim whitespaces.
+            if (!is_empty(curLine)) handle_line(head, pc, code_arr, dc, curLine, data_arr, errors_array, ec, lc, first_run_type);
+        }
+        if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
+        curLine = nextLine ? (nextLine+1) : NULL;
+        lc++;
+    }
+    free(ptr);
+}
+
+void second_run(char *content, symbol **head, word **mem_arr, unsigned long *mc, issue **errors_array, int *ec) {
+    char * curLine = content, *nextLine = NULL;
+    int lc = 1; // Lines counter
+    while(curLine)
+    {
+        nextLine = strchr(curLine, '\n');
+        if (nextLine) *nextLine = '\0';  // temporarily terminate the current line
+        // Skipping comments in assembler file:
+        if (!strstr(curLine, "//")){
+            curLine = trim(curLine); // Trim whitespaces.
+            if (!is_empty(curLine)) handle_line_second_run(head, mc, mem_arr, lc, curLine, errors_array, ec);
+        }
+        if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
+        curLine = nextLine ? (nextLine+1) : NULL;
+        lc++;
+    }
+}
+
+int validate_errors(issue *errors_arr, int ec) {
+    if (ec != 0) {
+        printf("\n\n\n~~~~~~~~~~~~~~~~ERRORS:~~~~~~~~~~~~~~~~\n");
+        print_issues(errors_arr, ec);
+        return 0;
+    }
+    return 1;
+}
+
+void assemble_machine_code(char *content) {
+    issue *errors_array = NULL;
+    unsigned long pc = 0, dc = 0, mc = 0;
+    symbol* symbols_table_head = NULL;
+    word *data_arr = NULL, *code_arr = NULL, *mem_arr = NULL;
+    int ec = 0; // Errors counter
+
+    first_run(content, &symbols_table_head, &pc, &code_arr, &dc, &data_arr, &errors_array, &ec);
+    mem_arr = append_word_arr(&code_arr, pc, &data_arr, dc);
+    update_list_addresses(symbols_table_head, pc, symbol_data);
+
+    // Exiting if we found errors:
+    if (!validate_errors(errors_array, ec)) return;
+
+    second_run(content, &symbols_table_head, &mem_arr, &mc, &errors_array, &ec);
+
+    // Exiting if we found errors:
+    if (!validate_errors(errors_array, ec)) return;
+    printf("~~~~~~~~~~~~~~~~MERGED:~~~~~~~~~~~~~~~~\n");
+    print_data_arr(mem_arr, mc);
+    printf("\n\n\n~~~~~~~~~~~~~~~~ERRORS:~~~~~~~~~~~~~~~~\n");
+    print_issues(errors_array, ec);
+    printf("\n\n\n~~~~~~~~~~~~~~~~SYMBOLS:~~~~~~~~~~~~~~~\n");
+    printList(symbols_table_head);
+
+
+
+//    pc = 0, dc = 0;
+//    first_run(content, &symbols_table_head, &pc, &code_arr, &dc, &data_arr, &errors_array, &ec);
+//    mem_arr = append_word_arr(&code_arr, pc, &data_arr, dc);
+//    printf("SIUUU\n\n%s\n\n", content);
+//    printf("\n\n\n~~~~~~~~~~~~~~~~MERGED:~~~~~~~~~~~~~~~~\n");
+//    print_data_arr(mem_arr, pc + dc);
 }
 
 

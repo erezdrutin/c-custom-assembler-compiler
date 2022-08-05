@@ -76,8 +76,8 @@ int main(int argc, char** argv)
 //    printf("%s", convert_to_custom_base(1026));
 
 //    printf("%s", read_file("macrotest.am"));
-
-    printList(generate_symbols(read_file("assemblertest.am")));
+    assemble_machine_code(read_file("official.am"));
+//    printList(generate_symbols(read_file("official.am")));
 //    printf("%d", is_register("r9"));
 
 //    word * ptr = NULL;
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 //    char str[100] = "STR: .string \"abcdef\"\nABC: .string \"ghijklmnop\"\nSIU: .string \"ghijklmnop\"";
 //    printList(generate_symbols(str));
 //    testos();
-//    validate_operator_usage("erez");
+//    validate_operator_usage_in_str("erez");
 
 //    char str[11];
 //    convert_to_10_bit_bin(1022, str);

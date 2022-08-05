@@ -2,6 +2,7 @@
 #define MAMAN14_SYMBOL_H
 #include <stdlib.h>
 #include "../ds/issue.h"
+#include "../utils/globals.h"
 enum symbol_type { symbol_data, symbol_code, symbol_extern, symbol_entry, symbol_invalid };
 typedef struct Node
 {
@@ -15,7 +16,10 @@ void insertAfter(symbol* prev_node, char* new_symbol, unsigned int new_address, 
 void append(symbol** head_ref, char* new_symbol, unsigned int new_address, enum symbol_type new_kind);
 int append_unique(symbol** head_ref, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
                    issue **errors_array, int * ec, int lc);
-void printList(symbol *node);
+void printList(const struct Node *node);
 int list_exists(const symbol * ptr, char * value);
+int list_exists_with_type(const symbol *ptr, char *value, enum symbol_type st);
 symbol * search_list(symbol * ptr, char * value);
+symbol * search_list_with_type(symbol * ptr, char * value, enum symbol_type st);
+void update_list_addresses(const symbol * node, unsigned int n, enum symbol_type st);
 #endif //MAMAN14_SYMBOL_H

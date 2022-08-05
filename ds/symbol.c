@@ -61,10 +61,32 @@ symbol * search_list(symbol * ptr, char * value) {
     return NULL;
 }
 
+symbol * search_list_with_type(symbol * ptr, char * value, enum symbol_type st) {
+    while(ptr != NULL)
+    {
+        if (!strcmp(ptr->value, value) && ptr->kind == st)
+            return ptr;
+
+        ptr = ptr->next;
+    }
+    return NULL;
+}
+
 int list_exists(const symbol * ptr, char * value) {
     while(ptr != NULL)
     {
         if (!strcmp(ptr->value, value))
+            return 1;
+
+        ptr=ptr->next;
+    }
+    return 0;
+}
+
+int list_exists_with_type(const symbol *ptr, char *value, enum symbol_type st) {
+    while(ptr != NULL)
+    {
+        if (!strcmp(ptr->value, value) && ptr->kind == st)
             return 1;
 
         ptr=ptr->next;
@@ -132,12 +154,25 @@ void append(struct Node** head_ref, char* new_symbol, unsigned int new_address, 
 }
 
 // This function prints contents of linked list starting from head
-void printList(struct Node *node)
+void printList(const struct Node *node)
 {
+    struct Node *temp = (struct Node*)node;
     printf("    symbol_type |||| value |||| kind    \n");
-    while (node != NULL)
+    while (temp != NULL)
     {
-        printf("    %s |||| %u |||| %d    ", node->value, node->address, node->kind);
-        node = node->next;
+        printf("    %s |||| %u |||| %d    ", temp->value, temp->address, temp->kind);
+        temp = temp->next;
+    }
+}
+
+void update_list_addresses(const symbol * node, unsigned int n, enum symbol_type st){
+    symbol *ptr = (symbol*)node;
+
+    while(ptr != NULL)
+    {
+        if (ptr->kind == st) {
+            ptr->address += n;
+        }
+        ptr = ptr->next;
     }
 }
