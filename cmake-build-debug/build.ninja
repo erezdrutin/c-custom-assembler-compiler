@@ -156,6 +156,12 @@ build CMakeFiles/maman14.dir/utils/globals.c.o: C_COMPILER__maman14_Debug /Users
   OBJECT_DIR = CMakeFiles/maman14.dir
   OBJECT_FILE_DIR = CMakeFiles/maman14.dir/utils
 
+build CMakeFiles/maman14.dir/stages/first_run.c.o: C_COMPILER__maman14_Debug /Users/erez/CLionProjects/maman14/stages/first_run.c || cmake_object_order_depends_target_maman14
+  DEP_FILE = CMakeFiles/maman14.dir/stages/first_run.c.o.d
+  FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk -std=gnu90
+  OBJECT_DIR = CMakeFiles/maman14.dir
+  OBJECT_FILE_DIR = CMakeFiles/maman14.dir/stages
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target maman14
@@ -164,7 +170,7 @@ build CMakeFiles/maman14.dir/utils/globals.c.o: C_COMPILER__maman14_Debug /Users
 #############################################
 # Link the executable maman14
 
-build maman14: C_EXECUTABLE_LINKER__maman14_Debug CMakeFiles/maman14.dir/main.c.o CMakeFiles/maman14.dir/utils/files.c.o CMakeFiles/maman14.dir/utils/string_utils.c.o CMakeFiles/maman14.dir/stages/pre_assembly.c.o CMakeFiles/maman14.dir/utils/macros.c.o CMakeFiles/maman14.dir/stages/assembler.c.o CMakeFiles/maman14.dir/ds/symbol.c.o CMakeFiles/maman14.dir/utils/conversions.c.o CMakeFiles/maman14.dir/ds/word.c.o CMakeFiles/maman14.dir/utils/dates.c.o CMakeFiles/maman14.dir/stages/assembler_old.c.o CMakeFiles/maman14.dir/ds/operators.c.o CMakeFiles/maman14.dir/ds/issue.c.o CMakeFiles/maman14.dir/utils/globals.c.o
+build maman14: C_EXECUTABLE_LINKER__maman14_Debug CMakeFiles/maman14.dir/main.c.o CMakeFiles/maman14.dir/utils/files.c.o CMakeFiles/maman14.dir/utils/string_utils.c.o CMakeFiles/maman14.dir/stages/pre_assembly.c.o CMakeFiles/maman14.dir/utils/macros.c.o CMakeFiles/maman14.dir/stages/assembler.c.o CMakeFiles/maman14.dir/ds/symbol.c.o CMakeFiles/maman14.dir/utils/conversions.c.o CMakeFiles/maman14.dir/ds/word.c.o CMakeFiles/maman14.dir/utils/dates.c.o CMakeFiles/maman14.dir/stages/assembler_old.c.o CMakeFiles/maman14.dir/ds/operators.c.o CMakeFiles/maman14.dir/ds/issue.c.o CMakeFiles/maman14.dir/utils/globals.c.o CMakeFiles/maman14.dir/stages/first_run.c.o
   FLAGS = -g -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX12.3.sdk
   OBJECT_DIR = CMakeFiles/maman14.dir
   POST_BUILD = :

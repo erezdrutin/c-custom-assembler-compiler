@@ -143,6 +143,33 @@ int list_exists_with_type(const symbol *ptr, char *value, enum symbol_type st) {
     return 0;
 }
 
+
+int append_unique_symbol_error(char* new_symbol, issue **errors_array, int *ec, int lc) {
+    // -1 for the %s part which will be replaced in the process:
+    size_t errLen = strlen("can't define the same symbol twice - %s.") + strlen(new_symbol) - 1;
+    char *error = (char *) malloc((strlen("can't define the same symbol twice - %s.") +
+                                   strlen(new_symbol)) * sizeof(char));
+    snprintf(error, errLen, "can't define the same symbol twice - %s.", new_symbol);
+    add_new_issue_to_arr(errors_array, ec, lc, error);
+    return 0;
+}
+
+int append_unique_symbol_from_op(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address,
+                                 enum symbol_type new_kind, issue **errors_array, int *ec, int lc) {
+    symbol *temp = search_list(*head_ref, new_symbol);
+
+    // If we're attempting to append a non-entry/non-extern symbol that already exists or an entry symbol that
+    // already exists - detect an error:
+    if ((temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern)
+        || search_list_without_type(*ent_table_head, new_symbol, symbol_entry) != NULL) {
+        return append_unique_symbol_error(new_symbol, errors_array, ec, lc);
+    }
+
+    // Otherwise - appending it:
+    append(head_ref, new_symbol, new_address, new_kind);
+    return 1;
+}
+
 /**
  * A function in charge of appending unique symbols to the symbols linked list.
  * @param head_ref A reference to the head of the symbols linked list.
@@ -154,33 +181,19 @@ int list_exists_with_type(const symbol *ptr, char *value, enum symbol_type st) {
  * @param ec The counter for the errors array.
  */
 int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
-        issue **errors_array, int * ec, int lc) {
+                  issue **errors_array, int * ec, int lc) {
     // search for existing:
     symbol *temp = search_list(*head_ref, new_symbol), *temp2 = NULL;
-    // If there is an existing node that isn't entry / extern - return an error:
-    if (temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern) {
-        // -1 for the %s part which will be replaced in the process:
-        size_t errLen = strlen("can't define the same symbol twice - %s.") + strlen(new_symbol) - 1;
-        char *error = (char *) malloc((strlen("can't define the same symbol twice - %s.") +
-                                       strlen(new_symbol)) * sizeof(char));
-        snprintf(error, errLen, "can't define the same symbol twice - %s.", new_symbol);
-        add_new_issue_to_arr(errors_array, ec, lc, error);
-        return 0;
-    }
-
-    // Entries - search for existing symbol in entries table.
-    // If found only a symbol of type entry - append the new version:
-    // If found anything else - there is a problem:
     temp2 = search_list(*ent_table_head, new_symbol);
-    if (search_list_without_type(*ent_table_head, new_symbol, symbol_entry)) {
-        // -1 for the %s part which will be replaced in the process:
-        size_t errLen = strlen("can't use the same entry twice - %s.") + strlen(new_symbol) - 1;
-        char *error = (char *) malloc((strlen("can't use the same entry twice - %s.") +
-                                       strlen(new_symbol)) * sizeof(char));
-        snprintf(error, errLen, "can't use the same entry twice - %s.", new_symbol);
-        add_new_issue_to_arr(errors_array, ec, lc, error);
-        return 0;
+
+    // If we're attempting to append a non-entry/non-extern symbol that already exists OR an entry symbol that
+    // already exists OR a symbol code that is defined twice - detect an error:
+    if ((temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern)
+        || search_list_without_type(*ent_table_head, new_symbol, symbol_entry) != NULL
+        || ((temp != NULL && new_kind == symbol_code) && (search_list_with_type(*head_ref, new_symbol, symbol_code) != NULL))) {
+        return append_unique_symbol_error(new_symbol, errors_array, ec, lc);
     }
+    // If we detected an entry symbol - append
     else if (temp2 == NULL && new_kind == symbol_entry) {
         if (temp != NULL)
             append(ent_table_head, temp->value, temp->address, temp->kind);
@@ -190,14 +203,65 @@ int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, 
         append(ent_table_head, new_symbol, new_address, new_kind);
 
     }
-//    else if ((temp == NULL && new_kind == symbol_entry) || (temp != NULL && temp->kind == symbol_entry)) {
-//        append(ent_table_head, new_symbol, new_address, new_kind);
-//    }
 
     // Otherwise - appending it:
     append(head_ref, new_symbol, new_address, new_kind);
     return 1;
 }
+
+
+///**
+// * A function in charge of appending unique symbols to the symbols linked list.
+// * @param head_ref A reference to the head of the symbols linked list.
+// * @param ent_table_head A reference to the head of a symbols ll for entries.
+// * @param new_symbol The value of the new symbol.
+// * @param new_address The address of the new symbol.
+// * @param new_kind The kind of the new symbol.
+// * @param errors_array An array of issues in case we detect one.
+// * @param ec The counter for the errors array.
+// */
+//int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
+//        issue **errors_array, int * ec, int lc) {
+//    // search for existing:
+//    symbol *temp = search_list(*head_ref, new_symbol), *temp2 = NULL;
+//    // If there is an existing node that isn't entry / extern - return an error:
+//    if (temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern) {
+//        // -1 for the %s part which will be replaced in the process:
+//        size_t errLen = strlen("can't define the same symbol twice - %s.") + strlen(new_symbol) - 1;
+//        char *error = (char *) malloc((strlen("can't define the same symbol twice - %s.") +
+//                                       strlen(new_symbol)) * sizeof(char));
+//        snprintf(error, errLen, "can't define the same symbol twice - %s.", new_symbol);
+//        add_new_issue_to_arr(errors_array, ec, lc, error);
+//        return 0;
+//    }
+//
+//    // Entries - search for existing symbol in entries table.
+//    // If found only a symbol of type entry - append the new version:
+//    // If found anything else - there is a problem:
+//    temp2 = search_list(*ent_table_head, new_symbol);
+//    if (search_list_without_type(*ent_table_head, new_symbol, symbol_entry)) {
+//        // -1 for the %s part which will be replaced in the process:
+//        size_t errLen = strlen("can't use the same entry twice - %s.") + strlen(new_symbol) - 1;
+//        char *error = (char *) malloc((strlen("can't use the same entry twice - %s.") +
+//                                       strlen(new_symbol)) * sizeof(char));
+//        snprintf(error, errLen, "can't use the same entry twice - %s.", new_symbol);
+//        add_new_issue_to_arr(errors_array, ec, lc, error);
+//        return 0;
+//    }
+//    else if (temp2 == NULL && new_kind == symbol_entry) {
+//        if (temp != NULL)
+//            append(ent_table_head, temp->value, temp->address, temp->kind);
+//        append(ent_table_head, new_symbol, new_address, new_kind);
+//    }
+//    else if (temp2 != NULL && temp2->kind == symbol_entry) {
+//        append(ent_table_head, new_symbol, new_address, new_kind);
+//
+//    }
+//
+//    // Otherwise - appending it:
+//    append(head_ref, new_symbol, new_address, new_kind);
+//    return 1;
+//}
 
 /* Given a reference (pointer to pointer) to the head
    of a list and an int, appends a new symbol at the end  */
@@ -338,7 +402,8 @@ void free_list(symbol *head) {
 symbol *generate_symbols_table(const symbol *head, const symbol *ent_table_head) {
     symbol *ptr = (symbol *)head, *entPtr = (symbol *)ent_table_head, *res = NULL, *temp = NULL;
     while (ptr != NULL) {
-        if (ptr->kind == symbol_entry && search_list(entPtr, ptr->value) != NULL) {
+        temp = search_list_without_type(entPtr, ptr->value, symbol_entry);
+        if (ptr->kind == symbol_entry && temp != NULL) {
             temp = search_list_without_type(entPtr, ptr->value, symbol_entry);
             append(&res, temp->value, temp->address, symbol_entry);
         } else if (search_list(entPtr, ptr->value) == NULL) {

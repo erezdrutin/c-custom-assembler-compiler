@@ -267,6 +267,45 @@ size_t count_char_in_string(const char *str, char ch) {
 }
 
 /**
+ * A function in charge of determining whether a given string is a number or not.
+ * @param s A string.
+ * @return True (1) or False (0).
+ */
+int is_number(char *s)
+{
+    int i;
+    for (i = 0; s[i]!= '\0'; i++)
+    {
+        if (!(isdigit(s[i]) || ((s[i] == '-' || s[i]=='+') && isdigit(s[i+1]))))
+            return 0;
+    }
+    return 1;
+}
+
+/**
+ * A function in charge of counting how many times a number appears in a string.
+ * Assuming that the numbers are separated by the received sep parameter.
+ * @param str A string to search for numbers in.
+ * @param sep A separator that the numbers are assumed to be separated by.
+ * @return An integer representing how many times a number appeared in the string.
+ */
+int count_numbers_in_string(const char *str) {
+    int count = 0;
+    char *p = (char *)str;
+    while (*p) { // While there are more characters to process...
+        if ( isdigit(*p) || ( (*p=='-'||*p=='+') && isdigit(*(p+1)) )) {
+            // Found a number
+            long val = strtol(p, &p, 10); // Read number
+            count++;
+        } else {
+            // Otherwise, move on to the next character.
+            p++;
+        }
+    }
+    return count;
+}
+
+/**
  * A function in charge of reversing a string.
  * @param str A string to reverse.
  * @return The reversed string.

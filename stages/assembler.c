@@ -27,6 +27,48 @@ char * parse_are(enum are_encoding are) {
     return are == are_absolute ? "00" : are == are_external ? "01" : "10";
 }
 
+/**
+ * A function in charge of validating a struct string.
+ * True represents that the string is valid & False represents invalid.
+ * @param ptr A pointer to a string.
+ * @param dt The datatype associated with the string.
+ * @return True (1) / False (0).
+ */
+int validate_struct_str(char *ptr, enum data_type dt) {
+    // Skipping the ".struct " part:
+    char *temp = strdup(trim(ptr) + strlen(".struct") + 1);
+    ptr = temp;
+    char *token = strtok(temp, ",");
+    // First parameter must be a number:
+    if (!is_number(trim(token)))
+        return 0;
+    token = strtok(NULL, ",");
+    // Second parameter must be a valid string (looks like "<str>"):
+    if (count_char_in_string(token, '"') != 2)
+        return 0;
+    // Freeing the memory & returning valid:
+    free(ptr);
+    return 1;
+}
+
+/**
+ * A function in charge of validating the each of the received detected data types match a valid line.
+ * If the received string is invalid, 0 (False) will be returned.
+ * @param str A string to validate.
+ * @param dt Datatype that we detected as associated with the string.
+ * @return True (1) / False (0).
+ */
+int validate_str(const char *str, enum data_type dt) {
+    char *ptr = (char *)str;
+    if (dt == sdata && strcmp(str, ".data") != 0 && count_numbers_in_string(str) > 0) return 1;
+    if (dt == sstring && count_char_in_string(str, '"') == 2) return 1;
+    if (dt == sstruct) return validate_struct_str(ptr, dt);
+    if (dt == iextern && count_char_in_string(trim(ptr), ' ') == 1) return 1;
+    if (dt == ientry && count_char_in_string(trim(ptr), ' ') == 1) return 1;
+    // We're handling this part later:
+    if (dt == op) return 1;
+    return 0;
+}
 
 enum data_type parse_str(char* str) {
     if (strchr(str, ':')) return symbol_dt;
@@ -94,23 +136,12 @@ void handle_string(char *ptr, unsigned long *dc, word **data_arr, enum run_type 
         (*dc)++;
         return;
     }
+
     word temp;
     convert_to_10_bit_bin(0, temp.value);
     temp.address = (*dc);
     *data_arr = (word *)realloc(*data_arr, sizeof(word) * ((*dc) + 1));
     (*data_arr)[(*dc)++] = temp;
-}
-
-enum are_encoding determine_are(char *ptr) {
-    return are_absolute;
-}
-
-char *extract_src_address(char *ptr) {
-    return ptr;
-}
-
-char *extract_dest_address(char *ptr) {
-    return ptr;
 }
 
 
@@ -231,15 +262,16 @@ void handle_line_second_run(symbol **head, symbol **ent_table_head, unsigned lon
     if (curDataType == symbol_dt)
         ptr = strchr(ptr, ':') + 1;
 
+    // Skipping invalid lines:
+    curDataType = parse_str(ptr);
+    if (!validate_str(ptr, curDataType)) return;
+
 
     // Only handling code "segment" (operations related fields that weren't initialized in the 1st run):
-    curDataType = parse_str(ptr);
     if (curDataType == op)
         handle_operator(ptr, head, ent_table_head, mc, mem_arr, errors_array, ec, lc, rt);
     else if (curDataType == sstring || curDataType == sdata || curDataType == sstruct || curDataType == iextern || curDataType == ientry)
         return;
-    else
-        add_new_issue_to_arr(errors_array, ec, lc, "Invalid instruction.");
 }
 
 
@@ -256,11 +288,15 @@ void handle_line(symbol **head, symbol **ent_table_head, unsigned long *pc, word
     char *ptr = (char *)line;
 
     // Handle symbols (if there are any):
-    // At the end of the run we should replace the addresses stored in this method based on the symbol type:
     if (!handle_symbol(head, ent_table_head, 0, 0, *pc, *dc, &ptr, errors_array, ec, lc)) return;
 
-    // Fetch the actual data type of the row (after "skipping" the symbol_type part):
     curDataType = parse_str(ptr);
+    if (!validate_str(ptr, curDataType)) {
+        add_new_issue_to_arr(errors_array, ec, lc, "Invalid instruction.");
+        return;
+    }
+
+    // Fetch the actual data type of the row (after "skipping" the symbol_type part):
     if (curDataType == sstring)
         handle_string(ptr, dc, data_arr, rt);
     else if (curDataType == sdata)
@@ -277,36 +313,6 @@ void handle_line(symbol **head, symbol **ent_table_head, unsigned long *pc, word
         handle_entry(head, ent_table_head, ptr, errors_array, ec, lc);
     else
         add_new_issue_to_arr(errors_array, ec, lc, "Invalid instruction.");
-}
-
-symbol* generate_symbols(char* content) {
-    issue *errors_array = NULL;
-    unsigned long pc = 0, dc = 0;
-    symbol *symbols_table_head = NULL, *ent_table_head = NULL;
-    word *data_arr = NULL, *code_arr = NULL, *mem_arr = NULL;
-    char * curLine = content, *nextLine = NULL;
-    int lc = 1, ec = 0; // Lines counter
-
-    while(curLine)
-    {
-        nextLine = strchr(curLine, '\n');
-        if (nextLine) *nextLine = '\0';  // temporarily terminate the current line
-        // Skipping comments in assembler file:
-        if (!strstr(curLine, "//")){
-            curLine = trim(curLine); // Trim whitespaces.
-            if (!is_empty(curLine)) handle_line(&symbols_table_head, &ent_table_head, &pc, &code_arr, &dc, curLine, &data_arr, &errors_array, &ec, lc, first_run_type);
-        }
-        if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
-        curLine = nextLine ? (nextLine+1) : NULL;
-        lc++;
-    }
-    printf("\n\n\n~~~~~~~~~~~~~~~~MERGED:~~~~~~~~~~~~~~~~\n");
-    print_data_arr(append_word_arr(&code_arr, pc, &data_arr, dc), pc + dc);
-
-    printf("\n\n\n~~~~~~~~~~~~~~~~ERRORS:~~~~~~~~~~~~~~~~\n");
-    print_issues(errors_array, ec);
-    printf("\n\n\n~~~~~~~~~~~~~~~~SYMBOLS:~~~~~~~~~~~~~~~~\n");
-    return symbols_table_head;
 }
 
 
@@ -357,6 +363,15 @@ int validate_errors(issue *errors_arr, int ec) {
     return 1;
 }
 
+//void assemble_files(char *fileName) {
+//    printf("ENTRIES:\n");
+//    write_file_custom_symbols_ll(str_cat_copy(fileName, ".ent"), get_entry_symbols_from_ll(symbols_table_head));
+//    printf("\n\nEXTERNS:\n");
+//    write_file_custom_symbols_ll(str_cat_copy(fileName, ".ext"), get_extern_symbols_from_ll(symbols_table_head));
+//    printf("\n\nOBJECT:\n");
+//    write_file_custom_word_arr("EREZKING.ob", mem_arr, 100, pc + dc);
+//}
+
 void assemble_machine_code(char *fileName, char *content) {
     issue *errors_array = NULL;
     unsigned long pc = 100, dc = 0, mc = 100;
@@ -372,14 +387,15 @@ void assemble_machine_code(char *fileName, char *content) {
 
     // Perform 2nd run & update the symbols' table head:
     second_run(content, &symbols_table_head, &ent_table_head, &mem_arr, &mc, &errors_array, &ec);
+
+    // Exiting if we found errors:
+    if (!validate_errors(errors_array, ec)) return;
+
     ptr = symbols_table_head;
     symbols_table_head = generate_symbols_table(symbols_table_head, ent_table_head);
 
     // Exiting if we found errors:
     if (!validate_errors(errors_array, ec)) return;
-
-    // Fetching external symbols from the symbols table:
-//    ext_table_head = get_extern_symbols_from_ll(symbols_table_head);
 
     // Create matching .ent & .ext files:
     printf("ENTRIES:\n");
@@ -390,6 +406,10 @@ void assemble_machine_code(char *fileName, char *content) {
     write_file_custom_word_arr("EREZKING.ob", mem_arr, 100, pc + dc);
 
 
+    free_list(ptr);
+    free_list(symbols_table_head);
+    free_list(ent_table_head);
+    free_list(ext_table_head);
 
 //    printf("\n\nSIU:\n\n");
 //    printf("\n\nENTRIES:\n");
@@ -398,8 +418,6 @@ void assemble_machine_code(char *fileName, char *content) {
 //    printf("\n\nEXTERNALS:\n");
 //    printList(get_extern_symbols_from_ll(symbols_table_head));
 //    write_file_custom_symbols_ll("AYOOOO2", get_extern_symbols_from_ll(symbols_table_head));
-//    free_list(ptr);
-//    free_list(symbols_table_head);
 //    write_file_custom_symbols_ll("AYOO", symbols_table_head, symbol_entry);
 //    write_file_custom_symbols_ll("AYOO2", symbols_table_head, symbol_extern);
 

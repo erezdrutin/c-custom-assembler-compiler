@@ -16,7 +16,9 @@ void insertAfter(symbol* prev_node, char* new_symbol, unsigned int new_address, 
 void append(symbol** head_ref, char* new_symbol, unsigned int new_address, enum symbol_type new_kind);
 int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
                   issue **errors_array, int * ec, int lc);
-void printList(const struct Node *node);
+int append_unique_symbol_from_op(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
+                                 issue **errors_array, int *ec, int lc);
+        void printList(const struct Node *node);
 int list_exists(const symbol * ptr, char * value);
 int list_exists_with_type(const symbol *ptr, char *value, enum symbol_type st);
 symbol * search_list(symbol * ptr, char * value);

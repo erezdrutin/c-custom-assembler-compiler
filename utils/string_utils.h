@@ -15,4 +15,6 @@ int is_empty(const char *s);
 size_t count_char_in_string(const char *str, char ch);
 char * create_chars_str(char ch, size_t length);
 char *strrev(char *str);
+int is_number(char *s);
+int count_numbers_in_string(const char *str);
 #endif //MAMAN14_STRINGS_H

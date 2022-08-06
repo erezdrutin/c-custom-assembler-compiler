@@ -241,3 +241,39 @@ void second_parse(){
 //    char* content = read_file(fileName);
 //    symbol t1;
 //}
+
+
+
+
+
+
+// TODO: TRASH
+//symbol* generate_symbols(char* content) {
+//    issue *errors_array = NULL;
+//    unsigned long pc = 0, dc = 0;
+//    symbol *symbols_table_head = NULL, *ent_table_head = NULL;
+//    word *data_arr = NULL, *code_arr = NULL, *mem_arr = NULL;
+//    char * curLine = content, *nextLine = NULL;
+//    int lc = 1, ec = 0; // Lines counter
+//
+//    while(curLine)
+//    {
+//        nextLine = strchr(curLine, '\n');
+//        if (nextLine) *nextLine = '\0';  // temporarily terminate the current line
+//        // Skipping comments in assembler file:
+//        if (!strstr(curLine, "//")){
+//            curLine = trim(curLine); // Trim whitespaces.
+//            if (!is_empty(curLine)) handle_line(&symbols_table_head, &ent_table_head, &pc, &code_arr, &dc, curLine, &data_arr, &errors_array, &ec, lc, first_run_type);
+//        }
+//        if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
+//        curLine = nextLine ? (nextLine+1) : NULL;
+//        lc++;
+//    }
+//    printf("\n\n\n~~~~~~~~~~~~~~~~MERGED:~~~~~~~~~~~~~~~~\n");
+//    print_data_arr(append_word_arr(&code_arr, pc, &data_arr, dc), pc + dc);
+//
+//    printf("\n\n\n~~~~~~~~~~~~~~~~ERRORS:~~~~~~~~~~~~~~~~\n");
+//    print_issues(errors_array, ec);
+//    printf("\n\n\n~~~~~~~~~~~~~~~~SYMBOLS:~~~~~~~~~~~~~~~~\n");
+//    return symbols_table_head;
+//}

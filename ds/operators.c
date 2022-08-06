@@ -262,17 +262,6 @@ int is_struct_access_call(const char *str) {
 // dest --> BBBBBBBB-MareMare (10 bits, 8 to represent address + 2 for ARE)
 // If either src / dest is a struct --> Another word with struct index {00000001-00} OR {00000010-00}
 
-int isNumber(char *s)
-{
-    int i;
-    for (i = 0; s[i]!= '\0'; i++)
-    {
-        if (!(isdigit(s[i]) || ((s[i] == '-' || s[i]=='+') && isdigit(s[i+1]))))
-            return 0;
-    }
-    return 1;
-}
-
 int is_str_in_arr(char **arr, char *str) {
     int i;
     size_t len = sizeof(arr)/sizeof(arr[0]);
@@ -304,7 +293,7 @@ int is_str_in_blacklist(char *str) {
  */
 enum addressing_methods determine_addressing_method(char *str) {
     // Immediate Addressing (operand starts with #):
-    if (*str == '#' && isNumber(str+1)) return immediate_addressing;
+    if (*str == '#' && is_number(str + 1)) return immediate_addressing;
     // Registers Addressing:
     else if (is_register(str)) return register_addressing;
     // (access to) Structs Addressing:
@@ -328,7 +317,7 @@ enum addressing_methods determine_addressing_method(char *str) {
 void handle_immediate_addressing(word **code_arr, unsigned long *pc, char *ptr, enum run_type rt) {
     char *res = (char *)malloc(sizeof(char) * WORD_SIZE);
     // Skipping the #:
-    if (isNumber(ptr + 1)) {
+    if (is_number(ptr + 1)) {
         snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(strtoll(ptr + 1, &ptr, 10), 8), "00");
     } else {
         return;
@@ -357,7 +346,7 @@ void handle_direct_addressing(symbol *head, symbol *ent_table_head, word **code_
     if (temp != NULL) {
         // Append value to words array as external:
         if (temp->kind == symbol_extern || temp->kind == symbol_entry) {
-            append_unique(&head, &ent_table_head, ptr, (unsigned int)*pc, symbol_code, errors_arr, ec, lc);
+            append_unique_symbol_from_op(&head, &ent_table_head, ptr, (unsigned int)*pc, symbol_code, errors_arr, ec, lc);
             snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(temp->address, 8), "01");
             add_or_update_word_in_arr(code_arr, pc, res, rt);
         }
