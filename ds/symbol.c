@@ -4,6 +4,7 @@
 #include "string.h"
 #include "issue.h"
 #include <stdlib.h>
+#include "../utils/validators.h"
 
 /* Given a reference (pointer to pointer) to the head of a list
    and an int,  inserts a new symbol on the front of the list. */
@@ -412,4 +413,20 @@ symbol *generate_symbols_table(const symbol *head, const symbol *ent_table_head)
         ptr = ptr->next;
     }
     return res;
+}
+
+/**
+ * A function in charge of determining the symbol type of the received string.
+ * @param str A string which we would like to determine its type.
+ * @return The type of the symbol (data / code / invalid).
+ */
+enum symbol_type get_symbol_type(const char *str) {
+    char *ptr = (char *)str;
+    enum data_type curDataType = parse_str(ptr);
+    // Returning symbol_data if .data / .string / .struct in the string, or symbol_code if any op in string:
+    if (curDataType == sdata || curDataType == sstring || curDataType == sstruct) return symbol_data;
+    else if (curDataType == op) return symbol_code;
+    else if (curDataType == iextern) return symbol_extern;
+    else if (curDataType == ientry) return symbol_entry;
+    return symbol_invalid;
 }
