@@ -115,7 +115,7 @@ char *extract_dest_address(char *ptr) {
 
 
 // Check for invalid usage of oprator (i.e
-void handle_operator(char *ptr, symbol **head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt) {
+void handle_operator(char *ptr, symbol **head, symbol **ent_table_head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt) {
     if (!validate_operator_usage_in_str(ptr)) {
         // ops_count is a single digit number, meaning it will have 1 char, therefore it will replace the "%d" and we
         // don't need to allocate any extra memory (+1 for \0):
@@ -126,7 +126,7 @@ void handle_operator(char *ptr, symbol **head, unsigned long *pc, word **code_ar
         return;
     }
     // In any other case - encode the command and store it in the code array:
-    encode_cmd(ptr, head, pc, code_arr, errors_array, ec, lc, rt);
+    encode_cmd(ptr, head, ent_table_head, pc, code_arr, errors_array, ec, lc, rt);
 }
 
 
@@ -134,19 +134,20 @@ void handle_operator(char *ptr, symbol **head, unsigned long *pc, word **code_ar
  * Handle entry lines from the source code.
  * Basically detects and appends entry symbols to the symbols linked list.
  * @param head A pointer to the head of a linked list that consists of symbols.
+ * @param ent_table_head A pointer to the head of a ll that consists of entry symbols.
  * @param ptr A pointer to a given line from the source code.
  * @param errors_array An array of errors which will be outputted to the user.
  * @param ec errors counter (index in errors array).
  * @param lc lines counter (lines index in source code file).
  */
-void handle_entry(symbol** head, char *ptr, issue ** errors_array, int *ec, int lc) {
+void handle_entry(symbol** head, symbol **ent_table_head, char *ptr, issue ** errors_array, int *ec, int lc) {
     // Skip the extern word & define a token with the contents of the first symbol:
     ptr = ptr + strlen(".entry") + 1;
     char *symbolName = NULL, *token = strtok(ptr, ",");
     // Appending each symbol to the symbols list:
     while (token != NULL) {
         symbolName = (char *)strdup(token);
-        append_unique(head, symbolName, 0, symbol_entry, errors_array, ec, lc);
+        append_unique(head, ent_table_head, symbolName, 0, symbol_entry, errors_array, ec, lc);
         token = strtok(NULL, ",");
     }
 }
@@ -160,14 +161,14 @@ void handle_entry(symbol** head, char *ptr, issue ** errors_array, int *ec, int 
  * @param ec errors counter (index in errors array).
  * @param lc lines counter (lines index in source code file).
  */
-void handle_extern(symbol** head, char *ptr, issue ** errors_array, int *ec, int lc) {
+void handle_extern(symbol** head, symbol **ent_table_head, char *ptr, issue ** errors_array, int *ec, int lc) {
     // Skip the extern word & define a token with the contents of the first symbol:
     ptr = ptr + strlen(".extern") + 1;
     char *symbolName = NULL, *token = strtok(ptr, ",");
     // Appending each symbol to the symbols list:
     while (token != NULL) {
         symbolName = (char *)strdup(token);
-        append_unique(head, symbolName, 0, symbol_extern, errors_array, ec, lc);
+        append_unique(head, ent_table_head, symbolName, 0, symbol_extern, errors_array, ec, lc);
         token = strtok(NULL, ",");
     }
 }
@@ -188,16 +189,16 @@ enum symbol_type get_symbol_type(const char *str) {
     return symbol_invalid;
 }
 
-int handle_append_symbol_to_symbols_arr(symbol** head, unsigned long extc, unsigned long entc, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc, char *symbolName) {
+int handle_append_symbol_to_symbols_arr(symbol** head, symbol **ent_table_head, unsigned long extc, unsigned long entc, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc, char *symbolName) {
     enum symbol_type st = get_symbol_type(*ptr);
     if (st == symbol_data)
-        return append_unique(head, symbolName, dc, symbol_data, errors_array, ec, lc);
+        return append_unique(head, ent_table_head, symbolName, dc, symbol_data, errors_array, ec, lc);
     else if (st == symbol_code)
-        return append_unique(head, symbolName, pc, symbol_code, errors_array, ec, lc);
+        return append_unique(head, ent_table_head, symbolName, pc, symbol_code, errors_array, ec, lc);
     else if (st == symbol_entry)
-        return append_unique(head, symbolName, entc, symbol_entry, errors_array, ec, lc);
+        return append_unique(head, ent_table_head, symbolName, entc, symbol_entry, errors_array, ec, lc);
     else if (st == symbol_extern)
-        return append_unique(head, symbolName, extc, symbol_extern, errors_array, ec, lc);
+        return append_unique(head, ent_table_head, symbolName, extc, symbol_extern, errors_array, ec, lc);
     return 0;
 }
 
@@ -207,7 +208,7 @@ int handle_append_symbol_to_symbols_arr(symbol** head, unsigned long extc, unsig
  * @param dc The counter of the data.
  * @param ptr A pointer to the current line.
  */
-int handle_symbol(symbol** head, unsigned long extc, unsigned long entc, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc) {
+int handle_symbol(symbol** head, symbol **ent_table_head, unsigned long extc, unsigned long entc, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc) {
     unsigned short symbolLen;
     char *symbolName = NULL;
     // Checking if the current line contains a symbol_type or not:
@@ -217,12 +218,12 @@ int handle_symbol(symbol** head, unsigned long extc, unsigned long entc, unsigne
         symbolLen = (unsigned short)(strchr(*ptr, ':') - *ptr);
         symbolName = (char *)strndup(*ptr, symbolLen);
         *ptr += symbolLen + 1;
-        return handle_append_symbol_to_symbols_arr(head, 0, 0, pc, dc, ptr, errors_array, ec, lc, symbolName);
+        return handle_append_symbol_to_symbols_arr(head, ent_table_head, 0, 0, pc, dc, ptr, errors_array, ec, lc, symbolName);
     }
     return 1;
 }
 
-void handle_line_second_run(symbol **head, unsigned long *mc, word **mem_arr, int lc, const char *line, issue **errors_array, int *ec) {
+void handle_line_second_run(symbol **head, symbol **ent_table_head, unsigned long *mc, word **mem_arr, int lc, const char *line, issue **errors_array, int *ec) {
     char *ptr = (char *)line;
     enum run_type rt = second_run_type;
     enum data_type curDataType = parse_str(ptr);
@@ -233,20 +234,10 @@ void handle_line_second_run(symbol **head, unsigned long *mc, word **mem_arr, in
 
     // Only handling code "segment" (operations related fields that weren't initialized in the 1st run):
     curDataType = parse_str(ptr);
-    if (curDataType == sstring)
-        handle_string(ptr, mc, mem_arr, rt);
-    else if (curDataType == sdata)
-        handle_data(ptr, mc, mem_arr, rt);
-    else if (curDataType == sstruct) {
-        // Handling data up to the first comma & string after the first comma:
-        handle_data(strtok(ptr, ","), mc, mem_arr, rt);
-        handle_string(strtok(NULL, ","), mc, mem_arr, rt);
-    } else if (curDataType == op)
-        handle_operator(ptr, head, mc, mem_arr, errors_array, ec, lc, rt);
-    else if (curDataType == iextern)
-        handle_extern(head, ptr, errors_array, ec, lc);
-    else if (curDataType == ientry)
-        handle_entry(head, ptr, errors_array, ec, lc);
+    if (curDataType == op)
+        handle_operator(ptr, head, ent_table_head, mc, mem_arr, errors_array, ec, lc, rt);
+    else if (curDataType == sstring || curDataType == sdata || curDataType == sstruct || curDataType == iextern || curDataType == ientry)
+        return;
     else
         add_new_issue_to_arr(errors_array, ec, lc, "Invalid instruction.");
 }
@@ -260,13 +251,13 @@ void handle_line_second_run(symbol **head, unsigned long *mc, word **mem_arr, in
  * @param line A string with the content of the current line.
  * @param data_arr An array of data to which we would like to append stuff if relevant.
  */
-void handle_line(symbol **head, unsigned long *pc, word **code_arr, unsigned long *dc, const char *line, word **data_arr, issue **errors_array, int *ec, int lc, enum run_type rt) {
+void handle_line(symbol **head, symbol **ent_table_head, unsigned long *pc, word **code_arr, unsigned long *dc, const char *line, word **data_arr, issue **errors_array, int *ec, int lc, enum run_type rt) {
     enum data_type curDataType;
     char *ptr = (char *)line;
 
     // Handle symbols (if there are any):
     // At the end of the run we should replace the addresses stored in this method based on the symbol type:
-    if (!handle_symbol(head, 0, 0, *pc, *dc, &ptr, errors_array, ec, lc)) return;
+    if (!handle_symbol(head, ent_table_head, 0, 0, *pc, *dc, &ptr, errors_array, ec, lc)) return;
 
     // Fetch the actual data type of the row (after "skipping" the symbol_type part):
     curDataType = parse_str(ptr);
@@ -279,11 +270,11 @@ void handle_line(symbol **head, unsigned long *pc, word **code_arr, unsigned lon
         handle_data(strtok(ptr, ","), dc, data_arr, rt);
         handle_string(strtok(NULL, ","), dc, data_arr, rt);
     } else if (curDataType == op)
-        handle_operator(ptr, head, pc, code_arr, errors_array, ec, lc, rt);
+        handle_operator(ptr, head, ent_table_head, pc, code_arr, errors_array, ec, lc, rt);
     else if (curDataType == iextern)
-        handle_extern(head, ptr, errors_array, ec, lc);
+        handle_extern(head, ent_table_head, ptr, errors_array, ec, lc);
     else if (curDataType == ientry)
-        handle_entry(head, ptr, errors_array, ec, lc);
+        handle_entry(head, ent_table_head, ptr, errors_array, ec, lc);
     else
         add_new_issue_to_arr(errors_array, ec, lc, "Invalid instruction.");
 }
@@ -291,7 +282,7 @@ void handle_line(symbol **head, unsigned long *pc, word **code_arr, unsigned lon
 symbol* generate_symbols(char* content) {
     issue *errors_array = NULL;
     unsigned long pc = 0, dc = 0;
-    symbol* symbols_table_head = NULL;
+    symbol *symbols_table_head = NULL, *ent_table_head = NULL;
     word *data_arr = NULL, *code_arr = NULL, *mem_arr = NULL;
     char * curLine = content, *nextLine = NULL;
     int lc = 1, ec = 0; // Lines counter
@@ -303,7 +294,7 @@ symbol* generate_symbols(char* content) {
         // Skipping comments in assembler file:
         if (!strstr(curLine, "//")){
             curLine = trim(curLine); // Trim whitespaces.
-            if (!is_empty(curLine)) handle_line(&symbols_table_head, &pc, &code_arr, &dc, curLine, &data_arr, &errors_array, &ec, lc, first_run_type);
+            if (!is_empty(curLine)) handle_line(&symbols_table_head, &ent_table_head, &pc, &code_arr, &dc, curLine, &data_arr, &errors_array, &ec, lc, first_run_type);
         }
         if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
         curLine = nextLine ? (nextLine+1) : NULL;
@@ -319,7 +310,7 @@ symbol* generate_symbols(char* content) {
 }
 
 
-void first_run(const char *content, symbol **head, unsigned long *pc, word **code_arr, unsigned long *dc, word **data_arr, issue **errors_array, int *ec) {
+void first_run(const char *content, symbol **head, symbol **ent_table_head, unsigned long *pc, word **code_arr, unsigned long *dc, word **data_arr, issue **errors_array, int *ec) {
     char *ptr = strdup(content), *curLine = ptr, *nextLine = NULL;
     int lc = 1; // Lines counter
 
@@ -327,10 +318,10 @@ void first_run(const char *content, symbol **head, unsigned long *pc, word **cod
     {
         nextLine = strchr(curLine, '\n');
         if (nextLine) *nextLine = '\0';  // temporarily terminate the current line
+        curLine = trim(curLine); // Trim whitespaces.
         // Skipping comments in assembler file:
-        if (!strstr(curLine, "//")){
-            curLine = trim(curLine); // Trim whitespaces.
-            if (!is_empty(curLine)) handle_line(head, pc, code_arr, dc, curLine, data_arr, errors_array, ec, lc, first_run_type);
+        if (*curLine != ';'){
+            if (!is_empty(curLine)) handle_line(head, ent_table_head, pc, code_arr, dc, curLine, data_arr, errors_array, ec, lc, first_run_type);
         }
         if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
         curLine = nextLine ? (nextLine+1) : NULL;
@@ -339,17 +330,17 @@ void first_run(const char *content, symbol **head, unsigned long *pc, word **cod
     free(ptr);
 }
 
-void second_run(char *content, symbol **head, word **mem_arr, unsigned long *mc, issue **errors_array, int *ec) {
+void second_run(char *content, symbol **head, symbol **ent_table_head, word **mem_arr, unsigned long *mc, issue **errors_array, int *ec) {
     char * curLine = content, *nextLine = NULL;
     int lc = 1; // Lines counter
     while(curLine)
     {
         nextLine = strchr(curLine, '\n');
         if (nextLine) *nextLine = '\0';  // temporarily terminate the current line
+        curLine = trim(curLine); // Trim whitespaces.
         // Skipping comments in assembler file:
-        if (!strstr(curLine, "//")){
-            curLine = trim(curLine); // Trim whitespaces.
-            if (!is_empty(curLine)) handle_line_second_run(head, mc, mem_arr, lc, curLine, errors_array, ec);
+        if (*curLine != ';'){
+            if (!is_empty(curLine)) handle_line_second_run(head, ent_table_head, mc, mem_arr, lc, curLine, errors_array, ec);
         }
         if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
         curLine = nextLine ? (nextLine+1) : NULL;
@@ -366,35 +357,55 @@ int validate_errors(issue *errors_arr, int ec) {
     return 1;
 }
 
-void assemble_machine_code(char *content) {
+void assemble_machine_code(char *fileName, char *content) {
     issue *errors_array = NULL;
     unsigned long pc = 100, dc = 0, mc = 100;
-    symbol* symbols_table_head = NULL;
+    symbol *symbols_table_head = NULL, *ptr = NULL, *ent_table_head = NULL, *ext_table_head = NULL;
     word *data_arr = NULL, *code_arr = NULL, *mem_arr = NULL;
     int ec = 0; // Errors counter
 
-    first_run(content, &symbols_table_head, &pc, &code_arr, &dc, &data_arr, &errors_array, &ec);
+    // Perform first run & update addresses based on instructions counter & data counter:
+    first_run(content, &symbols_table_head, &ent_table_head, &pc, &code_arr, &dc, &data_arr, &errors_array, &ec);
     mem_arr = append_word_arr(&code_arr, pc, &data_arr, dc);
     update_list_addresses(symbols_table_head, pc, symbol_data);
+    update_list_addresses(ent_table_head, pc, symbol_data);
+
+    // Perform 2nd run & update the symbols' table head:
+    second_run(content, &symbols_table_head, &ent_table_head, &mem_arr, &mc, &errors_array, &ec);
+    ptr = symbols_table_head;
+    symbols_table_head = generate_symbols_table(symbols_table_head, ent_table_head);
 
     // Exiting if we found errors:
     if (!validate_errors(errors_array, ec)) return;
 
-    second_run(content, &symbols_table_head, &mem_arr, &mc, &errors_array, &ec);
+    // Fetching external symbols from the symbols table:
+//    ext_table_head = get_extern_symbols_from_ll(symbols_table_head);
 
-    // Exiting if we found errors:
-    if (!validate_errors(errors_array, ec)) return;
-    printf("~~~~~~~~~~~~~~~~MERGED:~~~~~~~~~~~~~~~~\n");
-    print_data_arr(mem_arr, mc);
-    printf("\n\n\n~~~~~~~~~~~~~~~~ERRORS:~~~~~~~~~~~~~~~~\n");
-    print_issues(errors_array, ec);
-    printf("\n\n\n~~~~~~~~~~~~~~~~SYMBOLS:~~~~~~~~~~~~~~~\n");
-    printList(symbols_table_head);
-
-    printf("\n\nSIU:\n\n");
-    write_file_special("EREZKING.ob", mem_arr, 100, mc);
+    // Create matching .ent & .ext files:
+    printf("ENTRIES:\n");
+    write_file_custom_symbols_ll(str_cat_copy(fileName, ".ent"), get_entry_symbols_from_ll(symbols_table_head));
+    printf("\n\nEXTERNS:\n");
+    write_file_custom_symbols_ll(str_cat_copy(fileName, ".ext"), get_extern_symbols_from_ll(symbols_table_head));
+    printf("\n\nOBJECT:\n");
+    write_file_custom_word_arr("EREZKING.ob", mem_arr, 100, pc + dc);
 
 
+
+//    printf("\n\nSIU:\n\n");
+//    printf("\n\nENTRIES:\n");
+//    printList(get_entry_symbols_from_ll(symbols_table_head));
+//    write_file_custom_symbols_ll("AYOOOO", get_entry_symbols_from_ll(symbols_table_head));
+//    printf("\n\nEXTERNALS:\n");
+//    printList(get_extern_symbols_from_ll(symbols_table_head));
+//    write_file_custom_symbols_ll("AYOOOO2", get_extern_symbols_from_ll(symbols_table_head));
+//    free_list(ptr);
+//    free_list(symbols_table_head);
+//    write_file_custom_symbols_ll("AYOO", symbols_table_head, symbol_entry);
+//    write_file_custom_symbols_ll("AYOO2", symbols_table_head, symbol_extern);
+
+
+
+//    write_file_custom_symbols_ll("BRUH", symbols_table_head, symbol_extern);
 
 //    pc = 0, dc = 0;
 //    first_run(content, &symbols_table_head, &pc, &code_arr, &dc, &data_arr, &errors_array, &ec);

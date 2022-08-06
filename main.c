@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 //    printf("%s", convert_to_custom_base(1026));
 
 //    printf("%s", read_file("macrotest.am"));
-    assemble_machine_code(read_file("official.am"));
+    assemble_machine_code("erez", read_file("testos2.am"));
 //    printList(generate_symbols(read_file("official.am")));
 //    printf("%d", is_register("r9"));
 

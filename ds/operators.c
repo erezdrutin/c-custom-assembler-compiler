@@ -343,22 +343,34 @@ void handle_immediate_addressing(word **code_arr, unsigned long *pc, char *ptr, 
  * Expected to be called after detecting a symbol as a part of a command.
  * The function converts the received symbol's address to binary and appends it's binary representation to the code
  * array. If the symbol doesn't exist in the array yet, 10 Xs will be inserted instead.
+ * If a symbol already exists, assuming that we're referencing an external symbol occurrence, therefore appending the
+ * symbol with an external symbol reference.
  * @param head A pointer to the head of the symbols list.
  * @param code_arr An array of words.
  * @param pc Index in the code_arr.
  * @param str A pointer to the string contains a symbol.
  */
-void handle_direct_addressing(symbol *head, word **code_arr, unsigned long *pc, char *ptr, enum run_type rt) {
+void handle_direct_addressing(symbol *head, symbol *ent_table_head, word **code_arr, unsigned long *pc, char *ptr, enum run_type rt, issue ** errors_arr, int *ec, int lc) {
     char *res = (char *)malloc(sizeof(char) * WORD_SIZE);
 
-    if (list_exists(head, ptr)) {
-        symbol *temp = search_list(head, ptr);
-        snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(temp->address, 8), "10");
-        add_or_update_word_in_arr(code_arr, pc, res, rt);
+    symbol *temp = search_list(head, ptr);
+    if (temp != NULL) {
+        // Append value to words array as external:
+        if (temp->kind == symbol_extern || temp->kind == symbol_entry) {
+            append_unique(&head, &ent_table_head, ptr, (unsigned int)*pc, symbol_code, errors_arr, ec, lc);
+            snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(temp->address, 8), "01");
+            add_or_update_word_in_arr(code_arr, pc, res, rt);
+        }
+        else {
+            // Append value to words array as relocatable:
+            snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(temp->address, 8), "10");
+            add_or_update_word_in_arr(code_arr, pc, res, rt);
+        }
     } else {
         // Appending a sequence of 10 Xs to the code_arr:
         add_or_update_word_in_arr(code_arr, pc, create_chars_str('X', WORD_SIZE), rt);
     }
+
     free(res);
 }
 
@@ -372,7 +384,7 @@ void handle_direct_addressing(symbol *head, word **code_arr, unsigned long *pc, 
  * @param pc Index in the code_arr.
  * @param str A pointer to the string contains the attempt to access a struct field.
  */
-void handle_struct_addressing(symbol * head, word **code_arr, unsigned long *pc, const char *str, enum run_type rt) {
+void handle_struct_addressing(symbol * head, symbol *ent_table_head, word **code_arr, unsigned long *pc, const char *str, enum run_type rt, issue ** errors_arr, int *ec, int lc) {
     char *ptr = strdup(str), *token, *st, *ind;
     char *second = (char *)malloc(sizeof(char) * WORD_SIZE);
     token = strtok(ptr, ".");
@@ -381,7 +393,7 @@ void handle_struct_addressing(symbol * head, word **code_arr, unsigned long *pc,
     ind = strdup(trim(token));
 
     // Handle the first part of the struct as a direct addressing (as a label):
-    handle_direct_addressing(head, code_arr, pc, st, rt);
+    handle_direct_addressing(head, ent_table_head, code_arr, pc, st, rt, errors_arr, ec, lc);
     // Allocating a new word in the code array & freeing first, second & ptr:
     snprintf(second, WORD_SIZE, "%s%s", convert_to_x_bit_bin((size_t)(*ind - '0'), 8), "00");
     add_or_update_word_in_arr(code_arr, pc, second, rt);
@@ -417,13 +429,13 @@ void handle_register_addressing(word **code_arr, unsigned long *pc, const char *
     free(res);
 }
 
-void handle_addressing_method(symbol ** head, unsigned long *pc, word **code_arr, char *ptr, enum addressing_methods method, enum operand_type ot, enum run_type rt) {
+void handle_addressing_method(symbol ** head, symbol **ent_table_head, unsigned long *pc, word **code_arr, char *ptr, enum addressing_methods method, enum operand_type ot, enum run_type rt, issue ** errors_array, int *ec, int lc) {
     if (method == immediate_addressing)
         handle_immediate_addressing(code_arr, pc, ptr, rt);
     else if (method == direct_addressing)
-        handle_direct_addressing(*head, code_arr, pc, ptr, rt);
+        handle_direct_addressing(*head, *ent_table_head, code_arr, pc, ptr, rt, errors_array, ec, lc);
     else if (method == struct_addressing)
-        handle_struct_addressing(*head, code_arr, pc, ptr, rt);
+        handle_struct_addressing(*head, *ent_table_head, code_arr, pc, ptr, rt, errors_array, ec, lc);
     else if (method == register_addressing) {
         if (ot == src_operand) handle_register_addressing(code_arr, pc, ptr, NULL, rt);
         else handle_register_addressing(code_arr, pc, NULL, ptr, rt);
@@ -455,7 +467,7 @@ void encode_opless_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code
 }
 
 
-void encode_one_op_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, operator *op, enum run_type rt) {
+void encode_one_op_cmd(char *ptr, symbol ** head, symbol **ent_table_head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, operator *op, enum run_type rt) {
     char *cmd = (char *)malloc(WORD_SIZE * sizeof(char));
     char *operand = strdup(trim(ptr + strlen(op->name)));
     enum addressing_methods operand_am = determine_addressing_method(operand);
@@ -479,11 +491,11 @@ void encode_one_op_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code
     add_or_update_word_in_arr(code_arr, pc, cmd, rt);
 
     // Handle relevant addressing method for the current operation:
-    handle_addressing_method(head, pc, code_arr, operand, operand_am, src_operand, rt);
+    handle_addressing_method(head, ent_table_head, pc, code_arr, operand, operand_am, src_operand, rt, errors_array, ec, lc);
 }
 
 
-void encode_two_ops_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, operator *op, enum run_type rt) {
+void encode_two_ops_cmd(char *ptr, symbol ** head, symbol **ent_table_head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, operator *op, enum run_type rt) {
     char *cmd = (char *)malloc(WORD_SIZE * sizeof(char));
     char *src = strdup(trim(strtok(ptr + strlen(op->name), ",")));
     char *dest = strdup(trim(strtok(NULL, ",")));
@@ -513,19 +525,19 @@ void encode_two_ops_cmd(char *ptr, symbol ** head, unsigned long *pc, word **cod
     if (src_am == dest_am && src_am == register_addressing) {
         handle_register_addressing(code_arr, pc, src, dest, rt);
     } else {
-        handle_addressing_method(head, pc, code_arr, src, src_am, src_operand, rt);
-        handle_addressing_method(head, pc, code_arr, dest, dest_am, dest_operand, rt);
+        handle_addressing_method(head, ent_table_head, pc, code_arr, src, src_am, src_operand, rt, errors_array, ec, lc);
+        handle_addressing_method(head, ent_table_head, pc, code_arr, dest, dest_am, dest_operand, rt, errors_array, ec, lc);
     }
 }
 
 
-void encode_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt) {
+void encode_cmd(char *ptr, symbol ** head, symbol **ent_table_head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt) {
     operator *op = get_operator(ptr);
     ptr = trim(ptr);
     if (op->ops_count == two_ops) {
-        encode_two_ops_cmd(ptr, head, pc, code_arr, errors_array, ec, lc, op, rt);
+        encode_two_ops_cmd(ptr, head, ent_table_head, pc, code_arr, errors_array, ec, lc, op, rt);
     } else if (op->ops_count == one_op) {
-        encode_one_op_cmd(ptr, head, pc, code_arr, errors_array, ec, lc, op, rt);
+        encode_one_op_cmd(ptr, head, ent_table_head, pc, code_arr, errors_array, ec, lc, op, rt);
     } else {
         encode_opless_cmd(ptr, head, pc, code_arr, errors_array, ec, lc, op, rt);
     }

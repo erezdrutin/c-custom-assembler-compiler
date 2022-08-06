@@ -25,10 +25,10 @@ extern operatorMetaData opsMetaData[];
 int get_operator_index(char *str);
 operator * get_operator (char* str);
 int validate_operator_usage_in_str(const char *str);
-void encode_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt);
+void encode_cmd(char *ptr, symbol ** head, symbol **ent_table_head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt);
 int is_register(char *str);
 void handle_immediate_addressing(word **code_arr, unsigned long *pc, char *ptr, enum run_type rt);
 void handle_register_addressing(word **code_arr, unsigned long *pc, const char *ptr, const char *ptr2, enum run_type rt);
-void handle_struct_addressing(symbol * head, word **code_arr, unsigned long *pc, const char *str, enum run_type rt);
-void handle_direct_addressing(symbol *head, word **code_arr, unsigned long *pc, char *ptr, enum run_type rt);
+void handle_struct_addressing(symbol * head, symbol *ent_table_head, word **code_arr, unsigned long *pc, const char *str, enum run_type rt, issue ** errors_arr, int *ec, int lc);
+void handle_direct_addressing(symbol *head, symbol *ent_table_head, word **code_arr, unsigned long *pc, char *ptr, enum run_type rt, issue ** errors_arr, int *ec, int lc);
 #endif //MAMAN14_OPERATORS_H
