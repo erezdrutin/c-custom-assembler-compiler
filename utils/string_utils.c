@@ -61,26 +61,6 @@ void str_replace(char *str, const char *token, const char *replaceWith){
     }
 }
 
-
-//void str_replace_macro_new(char *str, const char *token, const char *replaceWith){
-//    /* As long as we find occurrences of the token: */
-//    while (strstr(str, token) != NULL) {
-//        size_t spaces_count = calc_chars_between_ch_and_token(str, token, '\n');
-//        char *curReplaceWith = lspaces_append(replaceWith, spaces_count);
-//        char *temp = malloc(strlen(strstr(str, token) + strlen(token)) + 1);
-//        /* Create a str with what's after the replaced part */
-//        strcpy(temp, strstr(str, token) + strlen(token));
-//        /* Take away the part to replace and the part after it in the initial str */
-//        *(strstr(str, token) - spaces_count) = '\0';
-//        /* Concat the first part of the str with the part to replace with */
-//        strcat(str, curReplaceWith);
-//        /* Concat the first part of the str with the part after the replaced part */
-//        strcat(str, temp);
-//        /* Free the memory to avoid memory leaks */
-//        free(temp);
-//    }
-//}
-
 /**
  * A function in charge of counting how many characters appear between a certain character and a token (substring).
  * Suppose we wanted to count how many characters are between b and hello in: "83434mb wqe hello hello",
@@ -303,28 +283,4 @@ int count_numbers_in_string(const char *str) {
         }
     }
     return count;
-}
-
-/**
- * A function in charge of reversing a string.
- * @param str A string to reverse.
- * @return The reversed string.
- */
-char *strrev(char *str)
-{
-    if (!str || ! *str)
-        return str;
-
-    int i = (int)strlen(str) - 1, j = 0;
-
-    char ch;
-    while (i > j)
-    {
-        ch = str[i];
-        str[i] = str[j];
-        str[j] = ch;
-        i--;
-        j++;
-    }
-    return str;
 }

@@ -3,54 +3,16 @@
 #include <stdio.h>
 #include "string.h"
 #include "issue.h"
-#include <stdlib.h>
 #include "../utils/validators.h"
 
-/* Given a reference (pointer to pointer) to the head of a list
-   and an int,  inserts a new symbol on the front of the list. */
-void push(struct Node** head_ref, char* new_symbol, unsigned int new_address, enum symbol_type new_kind)
-{
-    /* 1. allocate symbol */
-    struct Node* new_node = (struct Node*) malloc(sizeof(struct Node));
+enum search_type { includeType, excludeType };
 
-    /* 2. put in the value  */
-    new_node->value = new_symbol;
-    new_node->address  = new_address;
-    new_node->kind = new_kind;
-
-    /* 3. Make next of new symbol as head */
-    new_node->next = (*head_ref);
-
-    /* 4. move the head to point to the new symbol */
-    (*head_ref) = new_node;
-}
-
-/* Given a symbol prev_node, insert a new symbol after the given
-prev_node */
-void insertAfter(struct Node* prev_node, char* new_symbol, unsigned int new_address, enum symbol_type new_kind)
-{
-    /*1. check if the given prev_node is NULL */
-    if (prev_node == NULL) {
-        printf("the given previous symbol cannot be NULL");
-        return;
-    }
-
-    /* 2. allocate new symbol */
-    struct Node* new_node
-            = (struct Node*)malloc(sizeof(struct Node));
-
-    /* 3. put in the value */
-    new_node->value = new_symbol;
-    new_node->address = new_address;
-    new_node->kind = new_kind;
-
-    /* 4. Make next of new symbol as next of prev_node */
-    new_node->next = prev_node->next;
-
-    /* 5. move the next of prev_node as new_node */
-    prev_node->next = new_node;
-}
-
+/**
+ * A function in charge of searching the list for an element with the received value.
+ * @param ptr A pointer to symbols ll.
+ * @param value A value to search for (symbol name).
+ * @return A pointer to a symbol that answers the requirements (or NULL if there are none).
+ */
 symbol * search_list(symbol * ptr, char * value) {
     while(ptr != NULL)
     {
@@ -62,36 +24,37 @@ symbol * search_list(symbol * ptr, char * value) {
     return NULL;
 }
 
-symbol * search_list_with_type(symbol * ptr, char * value, enum symbol_type st) {
+/**
+ * Searching the list for a certain type.
+ * If the search type is includeType, we will search for elements that include the received type.
+ * If the search type is excludeType, we will search for elements that doesn't have the received type.
+ * @param ptr A pointer to symbols ll.
+ * @param value A value to search for (symbol name).
+ * @param st The symbol type that we would like to include / exclude in our search.
+ * @param searchType The type of the search (include / exclude).
+ * @return A pointer to a symbol that answers the requirements (or NULL if there are none).
+ */
+symbol *search_list_type(symbol *ptr, char *value, enum symbol_type st, enum search_type searchType) {
     while(ptr != NULL)
     {
-        if (!strcmp(ptr->value, value) && ptr->kind == st)
+        if (!strcmp(ptr->value, value) && (searchType == includeType && ptr->kind == st || searchType == excludeType && ptr->kind != st))
             return ptr;
 
         ptr = ptr->next;
     }
     return NULL;
 }
+
 
 /**
- * Search for all the symbols that share the same name as the received value whilst not having the received type.
- * @param ptr A pointer to the head of the ll.
- * @param value The value that we would like to search for.
- * @param st The type that we wouldn't like to include in the search.
- * @return A pointer to a matching node / NULL if none were found.
+ * A function in charge of searching for duplicate occurrences of symbols in the symbols ll.
+ * This function will be used combined with other validations in other to ensure that the ll contains unique symbols.
+ * @param ptr A pointer to symbols ll.
+ * @param value A value to search for (symbol name).
+ * @param address An address that we would like the found element to include.
+ * @param st The symbol type that we would like to include / exclude in our search.
+ * @return A pointer to a symbol that answers the requirements (or NULL if there are none).
  */
-symbol *search_list_without_type(symbol * ptr, char * value, enum symbol_type st) {
-    while(ptr != NULL)
-    {
-        if (!strcmp(ptr->value, value) && ptr->kind != st)
-            return ptr;
-
-        ptr = ptr->next;
-    }
-    return NULL;
-}
-
-
 symbol * search_list_for_dup(symbol * ptr, char * value, unsigned int address, enum symbol_type st) {
     while(ptr != NULL)
     {
@@ -104,47 +67,13 @@ symbol * search_list_for_dup(symbol * ptr, char * value, unsigned int address, e
 }
 
 /**
- * NEWNEWNEWNEW
- * @param ptr
- * @param st
- * @return
+ * A function in charge of appending errors with symbols to the errors array.
+ * @param new_symbol A symbol to include in the errors array.
+ * @param errors_array An array of errors that will be outputted to the user if there are any errors with the "src code".
+ * @param ec Errors counter, index in the errors array.
+ * @param lc Line counter, line index in the "src code".
+ * @return Returns 0 (resembles that an error occurred).
  */
-symbol * search_list_for_type(symbol * ptr, enum symbol_type st) {
-    symbol *newHead = NULL;
-    while(ptr != NULL)
-    {
-        if (ptr->kind == st)
-            append(&newHead, ptr->value, ptr->address, ptr->kind);
-
-        ptr = ptr->next;
-    }
-    return newHead;
-}
-
-
-int list_exists(const symbol * ptr, char * value) {
-    while(ptr != NULL)
-    {
-        if (!strcmp(ptr->value, value))
-            return 1;
-
-        ptr=ptr->next;
-    }
-    return 0;
-}
-
-int list_exists_with_type(const symbol *ptr, char *value, enum symbol_type st) {
-    while(ptr != NULL)
-    {
-        if (!strcmp(ptr->value, value) && ptr->kind == st)
-            return 1;
-
-        ptr=ptr->next;
-    }
-    return 0;
-}
-
-
 int append_unique_symbol_error(char* new_symbol, issue **errors_array, int *ec, int lc) {
     // -1 for the %s part which will be replaced in the process:
     size_t errLen = strlen("can't define the same symbol twice - %s.") + strlen(new_symbol) - 1;
@@ -155,31 +84,78 @@ int append_unique_symbol_error(char* new_symbol, issue **errors_array, int *ec, 
     return 0;
 }
 
-int append_unique_symbol_from_op(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address,
+/**
+ * A function in charge of appending nodes to the received ll.
+ * The functions appends the symbol at the END of the existing ll.
+ * @param head_ref A reference to the head of a symbols ll.
+ * @param new_symbol A new symbol to append to either only the symbols ll or both the symbols ll & the entries ll.
+ * @param new_address A new address for the new symbol.
+ * @param new_kind The kind of the new symbol.
+ */
+void append(symbol** head_ref, char* new_symbol, unsigned int new_address, enum symbol_type new_kind)
+{
+    /* Allocate new symbol & last symbol pointers */
+    symbol *new_node = (symbol*) malloc(sizeof(symbol));
+    symbol *last = *head_ref;
+
+    /* Initialize new symbol's attributes */
+    new_node->value = strdup(new_symbol);
+    new_node->address  = new_address;
+    new_node->kind = new_kind;
+    new_node->next = NULL;
+
+    /* If the Linked List is empty, then make the new symbol as head */
+    if (*head_ref == NULL)
+    {
+        *head_ref = new_node;
+        return;
+    }
+
+    /* Else traverse till the last symbol */
+    while (last->next != NULL)
+        last = last->next;
+
+    /* Change the next of last symbol to the newly created symbol */
+    last->next = new_node;
+}
+
+/**
+ * A function in charge of appending unique symbols from operator related commands (op commands).
+ * @param head_ref A reference to the head of a symbols ll.
+ * @param ent_table_head A reference to the head of the entries symbols ll.
+ * @param new_symbol A new symbol to append to either only the symbols ll or both the symbols ll & the entries ll.
+ * @param new_address A new address for the new symbol.
+ * @param new_kind The kind of the new symbol.
+ * @param errors_array An array of errors that will be outputted to the user if there are any errors with the "src code".
+ * @param ec Errors counter, index in the errors array.
+ * @param lc Line counter, line index in the "src code".
+ */
+void append_unique_symbol_from_op(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address,
                                  enum symbol_type new_kind, issue **errors_array, int *ec, int lc) {
     symbol *temp = search_list(*head_ref, new_symbol);
 
     // If we're attempting to append a non-entry/non-extern symbol that already exists or an entry symbol that
     // already exists - detect an error:
+    // If we're attempting to append a
     if ((temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern)
-        || search_list_without_type(*ent_table_head, new_symbol, symbol_entry) != NULL) {
-        return append_unique_symbol_error(new_symbol, errors_array, ec, lc);
+        || search_list_type(*ent_table_head, new_symbol, symbol_entry, excludeType) != NULL) {
+        append_unique_symbol_error(new_symbol, errors_array, ec, lc);
     }
 
     // Otherwise - appending it:
     append(head_ref, new_symbol, new_address, new_kind);
-    return 1;
 }
 
 /**
  * A function in charge of appending unique symbols to the symbols linked list.
- * @param head_ref A reference to the head of the symbols linked list.
- * @param ent_table_head A reference to the head of a symbols ll for entries.
- * @param new_symbol The value of the new symbol.
- * @param new_address The address of the new symbol.
+ * @param head_ref A reference to the head of a symbols ll.
+ * @param ent_table_head A reference to the head of the entries symbols ll.
+ * @param new_symbol A new symbol to append to either only the symbols ll or both the symbols ll & the entries ll.
+ * @param new_address A new address for the new symbol.
  * @param new_kind The kind of the new symbol.
- * @param errors_array An array of issues in case we detect one.
- * @param ec The counter for the errors array.
+ * @param errors_array An array of errors that will be outputted to the user if there are any errors with the "src code".
+ * @param ec Errors counter, index in the errors array.
+ * @param lc Line counter, line index in the "src code".
  */
 int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
                   issue **errors_array, int * ec, int lc) {
@@ -190,8 +166,8 @@ int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, 
     // If we're attempting to append a non-entry/non-extern symbol that already exists OR an entry symbol that
     // already exists OR a symbol code that is defined twice - detect an error:
     if ((temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern)
-        || search_list_without_type(*ent_table_head, new_symbol, symbol_entry) != NULL
-        || ((temp != NULL && new_kind == symbol_code) && (search_list_with_type(*head_ref, new_symbol, symbol_code) != NULL))) {
+        || search_list_type(*ent_table_head, new_symbol, symbol_entry, excludeType) != NULL
+        || ((temp != NULL && new_kind == symbol_code) && (search_list_type(*head_ref, new_symbol, symbol_code, includeType) != NULL))) {
         return append_unique_symbol_error(new_symbol, errors_array, ec, lc);
     }
     // If we detected an entry symbol - append
@@ -210,105 +186,13 @@ int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, 
     return 1;
 }
 
-
-///**
-// * A function in charge of appending unique symbols to the symbols linked list.
-// * @param head_ref A reference to the head of the symbols linked list.
-// * @param ent_table_head A reference to the head of a symbols ll for entries.
-// * @param new_symbol The value of the new symbol.
-// * @param new_address The address of the new symbol.
-// * @param new_kind The kind of the new symbol.
-// * @param errors_array An array of issues in case we detect one.
-// * @param ec The counter for the errors array.
-// */
-//int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
-//        issue **errors_array, int * ec, int lc) {
-//    // search for existing:
-//    symbol *temp = search_list(*head_ref, new_symbol), *temp2 = NULL;
-//    // If there is an existing node that isn't entry / extern - return an error:
-//    if (temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern) {
-//        // -1 for the %s part which will be replaced in the process:
-//        size_t errLen = strlen("can't define the same symbol twice - %s.") + strlen(new_symbol) - 1;
-//        char *error = (char *) malloc((strlen("can't define the same symbol twice - %s.") +
-//                                       strlen(new_symbol)) * sizeof(char));
-//        snprintf(error, errLen, "can't define the same symbol twice - %s.", new_symbol);
-//        add_new_issue_to_arr(errors_array, ec, lc, error);
-//        return 0;
-//    }
-//
-//    // Entries - search for existing symbol in entries table.
-//    // If found only a symbol of type entry - append the new version:
-//    // If found anything else - there is a problem:
-//    temp2 = search_list(*ent_table_head, new_symbol);
-//    if (search_list_without_type(*ent_table_head, new_symbol, symbol_entry)) {
-//        // -1 for the %s part which will be replaced in the process:
-//        size_t errLen = strlen("can't use the same entry twice - %s.") + strlen(new_symbol) - 1;
-//        char *error = (char *) malloc((strlen("can't use the same entry twice - %s.") +
-//                                       strlen(new_symbol)) * sizeof(char));
-//        snprintf(error, errLen, "can't use the same entry twice - %s.", new_symbol);
-//        add_new_issue_to_arr(errors_array, ec, lc, error);
-//        return 0;
-//    }
-//    else if (temp2 == NULL && new_kind == symbol_entry) {
-//        if (temp != NULL)
-//            append(ent_table_head, temp->value, temp->address, temp->kind);
-//        append(ent_table_head, new_symbol, new_address, new_kind);
-//    }
-//    else if (temp2 != NULL && temp2->kind == symbol_entry) {
-//        append(ent_table_head, new_symbol, new_address, new_kind);
-//
-//    }
-//
-//    // Otherwise - appending it:
-//    append(head_ref, new_symbol, new_address, new_kind);
-//    return 1;
-//}
-
-/* Given a reference (pointer to pointer) to the head
-   of a list and an int, appends a new symbol at the end  */
-void append(struct Node** head_ref, char* new_symbol, unsigned int new_address, enum symbol_type new_kind)
-{
-    /* 1. allocate symbol */
-    struct Node* new_node = (struct Node*) malloc(sizeof(struct Node));
-
-    struct Node *last = *head_ref;  /* used in step 5*/
-
-    /* 2. put in the value  */
-    new_node->value = strdup(new_symbol);
-    new_node->address  = new_address;
-    new_node->kind = new_kind;
-
-    /* 3. This new symbol is going to be the last symbol, so make next
-          of it as NULL*/
-    new_node->next = NULL;
-
-    /* 4. If the Linked List is empty, then make the new symbol as head */
-    if (*head_ref == NULL)
-    {
-        *head_ref = new_node;
-        return;
-    }
-
-    /* 5. Else traverse till the last symbol */
-    while (last->next != NULL)
-        last = last->next;
-
-    /* 6. Change the next of last symbol */
-    last->next = new_node;
-}
-
-// This function prints contents of linked list starting from head
-void printList(const struct Node *node)
-{
-    struct Node *temp = (struct Node*)node;
-    printf("    symbol_type |||| value |||| kind    \n");
-    while (temp != NULL)
-    {
-        printf("    %s |||| %u |||| %d    ", temp->value, temp->address, temp->kind);
-        temp = temp->next;
-    }
-}
-
+/**
+ * A function in charge of updating the addresses of the received list by appending the value n to each address
+ * associated with a symbol from the type st.
+ * @param node A pointer to the head of the ll.
+ * @param n The amount that we would like to append to st symbols' addresses.
+ * @param st The type of symbols to which we would like to append the value n.
+ */
 void update_list_addresses(const symbol * node, unsigned int n, enum symbol_type st) {
     symbol *ptr = (symbol*)node;
 
@@ -321,34 +205,12 @@ void update_list_addresses(const symbol * node, unsigned int n, enum symbol_type
     }
 }
 
-
 /**
- * Normally I wouldn't go with such method, but since we're talking a linked list whose size is limited (due to the
- * 256 memory addresses limitation), I felt like O(n^2) is good enough and is simpler to maintain rather than working
- * with Hashtables or other DS.
- * Anyways, the point of this function is to update the address of each entry or extern symbol based
- * @param node
- * @param st
+ * A function in charge of fetching the entry symbols from the ll pointed by node.
+ * @param node The head of the symbols ll.
+ * @return A pointer to a new list of entry symbols.
  */
-void update_list_custom_type(const symbol * node, enum symbol_type st) {
-    symbol *head = (symbol *)node, *temp = head, *temp1;
-
-    while(temp != NULL)
-    {
-        temp1 = head;
-        if (temp->kind == st) {
-            while(temp1 != NULL) {
-                if (!strcmp(temp->value, temp1->value) && temp->address != temp1->address) {
-                    temp->address = temp1->address;
-                }
-                temp1=temp1->next;
-            }
-        }
-        temp=temp->next;
-    }
-}
-
-symbol * get_entry_symbols_from_ll(const symbol *node) {
+symbol *get_entry_symbols_from_ll(const symbol *node) {
     symbol *head = (symbol *)node, *temp = head, *temp1;
     symbol *res = NULL;
     while (temp != NULL) {
@@ -367,7 +229,12 @@ symbol * get_entry_symbols_from_ll(const symbol *node) {
     return res;
 }
 
-symbol * get_extern_symbols_from_ll(const symbol *node) {
+/**
+ * A function in charge of fetching the extern symbols from the ll pointed by node.
+ * @param node The head of the symbols ll.
+ * @return A pointer to a new list of extern symbols.
+ */
+symbol *get_extern_symbols_from_ll(const symbol *node) {
     symbol *head = (symbol *)node, *temp = head, *temp1;
     symbol *res = NULL;
     while (temp != NULL) {
@@ -400,12 +267,18 @@ void free_list(symbol *head) {
     }
 }
 
+/**
+ * A function in charge of generating a symbols table from the 2 received ll.
+ * @param head The head of the existing symbols ll.
+ * @param ent_table_head The head of the entries ll.
+ * @return A pointer to a new "merged" ll.
+ */
 symbol *generate_symbols_table(const symbol *head, const symbol *ent_table_head) {
     symbol *ptr = (symbol *)head, *entPtr = (symbol *)ent_table_head, *res = NULL, *temp = NULL;
     while (ptr != NULL) {
-        temp = search_list_without_type(entPtr, ptr->value, symbol_entry);
+        temp = search_list_type(entPtr, ptr->value, symbol_entry, excludeType);
         if (ptr->kind == symbol_entry && temp != NULL) {
-            temp = search_list_without_type(entPtr, ptr->value, symbol_entry);
+            temp = search_list_type(entPtr, ptr->value, symbol_entry, excludeType);
             append(&res, temp->value, temp->address, symbol_entry);
         } else if (search_list(entPtr, ptr->value) == NULL) {
             append(&res, ptr->value, ptr->address, ptr->kind);

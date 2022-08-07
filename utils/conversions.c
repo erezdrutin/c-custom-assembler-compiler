@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-//#include <math.h>
 
 char symbols[32] = {'!','@','#','$','%','^','&','*','<','>','a',
                   'b','c','d','e','f','g','h','i','j','k','l',
@@ -73,6 +72,14 @@ void convert_to_10_bit_bin(size_t number, char * value)
 }
 
 
+/**
+ * A function in charge of converting the received number to a char array with the binary
+ * representation of the number at the length of the received len parameter.
+ * For example, to get the 2 bit binary representation for the number t, we would perform: convert_to_x_bit_bin(t, 2).
+ * @param number A number to convert to binary representation.
+ * @param len The length of the binary representation.
+ * @return An allocated char array with the binary representation of the received number.
+ */
 char * convert_to_x_bit_bin(size_t number, int len)
 {
     int i;
@@ -111,19 +118,3 @@ int convert_10_bit_bin_to_decimal(const char *binary)
 
     return sum;
 }
-
-/**
- * COOL THIS SHIT ACTUALLY WORKS LMAO
- * @param n
- * @param base
- * @return
- */
-//char testos(int n, int base) {
-//    if (n < base) {
-//        printf("%c", symbols[n]);
-//        return symbols[n];
-//    }
-//    testos(n / base, base);
-//    printf("%c", symbols[n % base]);
-//    return symbols[n % base];
-//}

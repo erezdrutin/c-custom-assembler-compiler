@@ -5,7 +5,7 @@
 #include "validators.h"
 #include <string.h>
 #include <ctype.h>
-#include <printf.h>
+#include <stdio.h>
 
 /**
  * Parsing every piece of data from the received data line.
@@ -14,6 +14,7 @@
  * @param ptr A pointer to a data line.
  * @param dc The data counter.
  * @param data_arr An array of data structs.
+ * @param rt The run type for the current usage of this function (first_run_type / second_run_type).
  */
 void handle_data(char *ptr, unsigned long *dc, word **data_arr, enum run_type rt) {
     while (*ptr) { // While there are more characters to process...
@@ -40,6 +41,7 @@ void handle_data(char *ptr, unsigned long *dc, word **data_arr, enum run_type rt
  * @param ptr A pointer to string line.
  * @param dc The counter of the data.
  * @param data_arr An array of data to which we would like to append stuff if relevant.
+ * @param rt The run type for the current usage of this function (first_run_type / second_run_type).
  */
 void handle_string(char *ptr, unsigned long *dc, word **data_arr, enum run_type rt) {
     ptr = strchr(ptr, '"') + 1;
@@ -71,7 +73,20 @@ void handle_string(char *ptr, unsigned long *dc, word **data_arr, enum run_type 
 }
 
 
-// Check for invalid usage of oprator (i.e
+/**
+ * Perform operator related operations such as encoding commands and etc.
+ * The function assumes that we previously performed the relevant checks to validate that we're about to handle an
+ * operator.
+ * @param ptr A pointer to the start of a string representing a line from the "src code".
+ * @param head The head of a symbols ll.
+ * @param ent_table_head The head of an entities ll.
+ * @param pc Index in the code array.
+ * @param code_arr An array that contains the code segment.
+ * @param errors_array An array of errors.
+ * @param ec Index in the errors array.
+ * @param lc The line counter (points to the number of the current line from the "src code").
+ * @param rt The run type for the current usage of this function (first_run_type / second_run_type).
+ */
 void handle_operator(char *ptr, symbol **head, symbol **ent_table_head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt) {
     if (!validate_operator_usage_in_str(ptr)) {
         // ops_count is a single digit number, meaning it will have 1 char, therefore it will replace the "%d" and we
@@ -130,7 +145,20 @@ void handle_extern(symbol** head, symbol **ent_table_head, char *ptr, issue ** e
     }
 }
 
-int handle_append_symbol_to_symbols_arr(symbol** head, symbol **ent_table_head, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc, char *symbolName) {
+/**
+ * A function in charge of appending the received symbol to the linked list of symbols.
+ * @param head The head of a symbols ll.
+ * @param ent_table_head The head of an entities ll.
+ * @param pc Index in the code array.
+ * @param dc Index in the data array.
+ * @param ptr A pointer to a string that we would like to append to the symbols ll.
+ * @param errors_array An array of errors.
+ * @param ec Index in the errors array.
+ * @param lc The index of the line at which we would like to perform the operation.
+ * @param symbolName The name of the symbol that we would like to append.
+ * @return True (1) / False (0) based on the status of the operation.
+ */
+int handle_append_symbol_to_symbols_ll(symbol** head, symbol **ent_table_head, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc, char *symbolName) {
     enum symbol_type st = get_symbol_type(*ptr);
     if (st == symbol_data)
         return append_unique(head, ent_table_head, symbolName, dc, symbol_data, errors_array, ec, lc);
@@ -144,22 +172,29 @@ int handle_append_symbol_to_symbols_arr(symbol** head, symbol **ent_table_head, 
 }
 
 /**
- * A function in charge of handling a case in which the received string contains a symbol_type.
- * @param head The head of the symbols linked list.
- * @param dc The counter of the data.
- * @param ptr A pointer to the current line.
+ * A function in charge of handling a line in which there might be a symbol.
+ *
+ * @param head The head of a symbols ll.
+ * @param ent_table_head The head of an entities ll.
+ * @param pc Index in the code array.
+ * @param dc Index in the data array.
+ * @param ptr A pointer to a string that we would like to append to the symbols ll.
+ * @param errors_array An array of errors.
+ * @param ec Index in the errors array.
+ * @param lc The index of the line at which we would like to perform the operation.
+ * @return True (1) / False (0) based on the status of the operation.
  */
 int handle_symbol(symbol** head, symbol **ent_table_head, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc) {
     unsigned short symbolLen;
     char *symbolName = NULL;
-    // Checking if the current line contains a symbol_type or not:
 
     if (parse_str(*ptr) == symbol_dt) {
         // Allocating memory to store the symbol_type & adding it to the symbols list:
         symbolLen = (unsigned short)(strchr(*ptr, ':') - *ptr);
         symbolName = (char *)strndup(*ptr, symbolLen);
         *ptr += symbolLen + 1;
-        return handle_append_symbol_to_symbols_arr(head, ent_table_head, pc, dc, ptr, errors_array, ec, lc, symbolName);
+        return handle_append_symbol_to_symbols_ll(head, ent_table_head, pc, dc, ptr, errors_array, ec, lc, symbolName);
     }
+
     return 1;
 }

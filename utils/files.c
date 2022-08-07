@@ -5,7 +5,7 @@
 
 /**
  * Checks if a file exists or not.
- * @param fileName - The name of the file that we want to check if it exists.
+ * @param fileName The name of the file that we want to check if it exists.
  * @return 1 if the file exists, 0 if it isn't.
  */
 int does_file_exist(const char *fileName)
@@ -112,10 +112,7 @@ int write_file_custom_word_arr(char *fileName, word *arr, unsigned long start, u
     *(content + strlen(content) - 1) = '\0';
 
     // Create the file:
-//    return write_file(fileName, content);
-
-    printf("%s", content);
-    return 1;
+    return write_file(fileName, content);
 }
 
 /**
@@ -130,7 +127,7 @@ int write_file_custom_symbols_ll(char *fileName, symbol *ptr) {
     size_t lineLen, totalLen = 0;
 
     while (ptr != NULL) {
-        lineLen = strlen(ptr->value) + ENT_FILE_ADD_LEN + 1;
+        lineLen = strlen(ptr->value) + CUSTOM_FILE_ADD_LEN + 1;
         content = content == NULL ? (char *)malloc((lineLen) * sizeof(char)) : (char *)realloc(content, (lineLen) * sizeof(char));
         snprintf(content + (totalLen), lineLen + 1, "%s\t%s\n", ptr->value, convert_to_custom_base_2_bit(ptr->address));
         totalLen += lineLen;
@@ -140,8 +137,5 @@ int write_file_custom_symbols_ll(char *fileName, symbol *ptr) {
     *(content + totalLen - 1) = '\0';
 
     // Create the file:
-//    return write_file(fileName, content);
-
-    printf("%s", content);
-    return 1;
+    return write_file(fileName, content);
 }

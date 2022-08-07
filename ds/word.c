@@ -1,17 +1,5 @@
-//
-// Created by Erez on 29/07/2022.
-//
-
 #include "word.h"
-#include <stdio.h>
 #include <string.h>
-
-void print_data_arr(word * arr, size_t dc) {
-    size_t i;
-    for (i = 0; i < dc; i++) {
-        printf("value: %s, address: %u\n", arr[i].value, arr[i].address);
-    }
-}
 
  /**
   * A function in charge of dynamically allocating memory in order to append new words to the received array.
@@ -20,6 +8,7 @@ void print_data_arr(word * arr, size_t dc) {
   * @param arr The array to which we would like to add a new word.
   * @param counter A counter that resembles the last index in the array.
   * @param val The value that we would like to append to the array.
+  * @param rt The run type (first / second).
   */
 void add_or_update_word_in_arr(word ** arr, unsigned long *counter, char * val, enum run_type rt) {
     if (rt == first_run_type) {
