@@ -13,19 +13,19 @@ void handle_macros(char *content) {
     const char* ptr = content;
     char *temp = NULL, *macroDefinition = NULL, *macroContent = NULL, *macroName = NULL;
 
-    // Searching for macros in the content string:
+    /* Searching for macros in the content string: */
     while ((temp = strstr(ptr, "macro"))) {
-        // Extracting the name, content & definition parts of the current macro from the content string:
+        /* Extracting the name, content & definition parts of the current macro from the content string: */
         macroName = extract_macro_name(temp);
         macroContent = extract_macro_content(temp);
         macroDefinition = extract_macro_definition(temp);
 
-        // Removing the macro definition:
+        /* Removing the macro definition: */
         str_replace(content, macroDefinition, "");
-        // Replacing each occurrence of the macro with its content:
+        /* Replacing each occurrence of the macro with its content: */
         str_replace_macro(content, macroName, macroContent);
 
-        // Freeing the memory used in the process:
+        /* Freeing the memory used in the process: */
         free(macroName);
         free(macroContent);
         free(macroDefinition);
@@ -43,10 +43,10 @@ void handle_macros(char *content) {
 void pre_assembly(char* fileName) {
     char* newFileName = strdup(fileName);
     char* content = read_file(fileName);
-    // Replace the received filename extension .as with .am:
+    /* Replace the received filename extension .as with .am: */
     str_replace(newFileName, ".as", ".am");
-    // Expand & handle macros from the source file:
+    /* Expand & handle macros from the source file: */
     handle_macros(content);
-    // Write a ".am" file with the source-code after handling the macros:
+    /* Write a ".am" file with the source-code after handling the macros: */
     write_file(newFileName, content);
 }

@@ -25,16 +25,16 @@ void handle_line_second_run(symbol **head, symbol **ent_table_head, unsigned lon
     char *ptr = (char *)line;
     enum run_type rt = second_run_type;
     enum data_type curDataType = parse_str(ptr);
-    // Skipping any symbols (because we already declared them in the 1st run):
+    /* Skipping any symbols (because we already declared them in the 1st run): */
     if (curDataType == symbol_dt)
         ptr = strchr(ptr, ':') + 1;
 
-    // Skipping invalid lines:
+    /* Skipping invalid lines: */
     curDataType = parse_str(ptr);
     if (!validate_str(ptr, curDataType)) return;
 
 
-    // Only handling code "segment" (operations related fields that weren't initialized in the 1st run):
+    /* Only handling code "segment" (operations related fields that weren't initialized in the 1st run): */
     if (curDataType == op)
         handle_operator(ptr, head, ent_table_head, mc, mem_arr, errors_array, ec, lc, rt);
     else if (curDataType == sstring || curDataType == sdata || curDataType == sstruct || curDataType == iextern || curDataType == ientry)
@@ -56,17 +56,20 @@ void handle_line_second_run(symbol **head, symbol **ent_table_head, unsigned lon
  */
 void second_run(char *content, symbol **head, symbol **ent_table_head, word **mem_arr, unsigned long *mc, issue **errors_array, int *ec) {
     char * curLine = content, *nextLine = NULL;
-    int lc = 1; // Lines counter
+    int lc = 1; /* Lines counter */
     while(curLine)
     {
         nextLine = strchr(curLine, '\n');
-        if (nextLine) *nextLine = '\0';  // temporarily terminate the current line
-        curLine = trim(curLine); // Trim whitespaces.
-        // Skipping comments in assembler file:
+        /* Temporarily terminate the current line: */
+        if (nextLine) *nextLine = '\0';
+        /* Trim whitespaces: */
+        curLine = trim(curLine);
+        /* Skipping comments in assembler file: */
         if (*curLine != ';'){
             if (!is_empty(curLine)) handle_line_second_run(head, ent_table_head, mc, mem_arr, lc, curLine, errors_array, ec);
         }
-        if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
+        /* Then restore newline-char: */
+        if (nextLine) *nextLine = '\n';
         curLine = nextLine ? (nextLine+1) : NULL;
         lc++;
     }

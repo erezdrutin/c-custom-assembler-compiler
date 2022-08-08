@@ -3,6 +3,7 @@
 #include "string_utils.h"
 #include "conversions.h"
 #include "validators.h"
+#include "addr_methods.h"
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -17,7 +18,8 @@
  * @param rt The run type for the current usage of this function (first_run_type / second_run_type).
  */
 void handle_data(char *ptr, unsigned long *dc, word **data_arr, enum run_type rt) {
-    while (*ptr) { // While there are more characters to process...
+    /* While there are more characters to process... */
+    while (*ptr) {
         if ( isdigit(*ptr) || ( (*ptr=='-'||*ptr=='+') && isdigit(*(ptr+1)) )) {
             if (rt == second_run_type) (*dc)++;
             else {
@@ -59,7 +61,7 @@ void handle_string(char *ptr, unsigned long *dc, word **data_arr, enum run_type 
         ptr++;
     }
 
-    // Inserting an extra word to the data array that resembles the end of the string:
+    /* Inserting an extra word to the data array that resembles the end of the string: */
     if (rt == second_run_type) {
         (*dc)++;
         return;
@@ -89,15 +91,15 @@ void handle_string(char *ptr, unsigned long *dc, word **data_arr, enum run_type 
  */
 void handle_operator(char *ptr, symbol **head, symbol **ent_table_head, unsigned long *pc, word **code_arr, issue ** errors_array, int *ec, int lc, enum run_type rt) {
     if (!validate_operator_usage_in_str(ptr)) {
-        // ops_count is a single digit number, meaning it will have 1 char, therefore it will replace the "%d" and we
-        // don't need to allocate any extra memory (+1 for \0):
+        /* ops_count is a single digit number, meaning it will have 1 char, therefore it will replace the "%d" and we
+         * don't need to allocate any extra memory (+1 for \0): */
         size_t errLen = strlen("Operator received wrong amount of args - Expected: %d.");
         char *error = (char *)malloc((strlen("Operator received wrong amount of args - Expected: %d."))* sizeof(char));
         snprintf(error, errLen, "Operator received wrong amount of args - Expected: %d.", (int)get_operator(ptr)->ops_count);
         add_new_issue_to_arr(errors_array, ec, lc, error);
         return;
     }
-    // In any other case - encode the command and store it in the code array:
+    /* In any other case - encode the command and store it in the code array: */
     encode_cmd(ptr, head, ent_table_head, pc, code_arr, errors_array, ec, lc, rt);
 }
 
@@ -113,10 +115,10 @@ void handle_operator(char *ptr, symbol **head, symbol **ent_table_head, unsigned
  * @param lc lines counter (lines index in source code file).
  */
 void handle_entry(symbol** head, symbol **ent_table_head, char *ptr, issue ** errors_array, int *ec, int lc) {
-    // Skip the extern word & define a token with the contents of the first symbol:
+    /* Skip the extern word & define a token with the contents of the first symbol: */
     ptr = ptr + strlen(".entry") + 1;
     char *symbolName = NULL, *token = strtok(ptr, ",");
-    // Appending each symbol to the symbols list:
+    /* Appending each symbol to the symbols list: */
     while (token != NULL) {
         symbolName = (char *)strdup(token);
         append_unique(head, ent_table_head, symbolName, 0, symbol_entry, errors_array, ec, lc);
@@ -134,10 +136,10 @@ void handle_entry(symbol** head, symbol **ent_table_head, char *ptr, issue ** er
  * @param lc lines counter (lines index in source code file).
  */
 void handle_extern(symbol** head, symbol **ent_table_head, char *ptr, issue ** errors_array, int *ec, int lc) {
-    // Skip the extern word & define a token with the contents of the first symbol:
+    /* Skip the extern word & define a token with the contents of the first symbol: */
     ptr = ptr + strlen(".extern") + 1;
     char *symbolName = NULL, *token = strtok(ptr, ",");
-    // Appending each symbol to the symbols list:
+    /* Appending each symbol to the symbols list: */
     while (token != NULL) {
         symbolName = (char *)strdup(token);
         append_unique(head, ent_table_head, symbolName, 0, symbol_extern, errors_array, ec, lc);
@@ -160,6 +162,7 @@ void handle_extern(symbol** head, symbol **ent_table_head, char *ptr, issue ** e
  */
 int handle_append_symbol_to_symbols_ll(symbol** head, symbol **ent_table_head, unsigned long pc, unsigned long dc, char **ptr, issue ** errors_array, int *ec, int lc, char *symbolName) {
     enum symbol_type st = get_symbol_type(*ptr);
+    if (!is_label(symbolName)) return 0;
     if (st == symbol_data)
         return append_unique(head, ent_table_head, symbolName, dc, symbol_data, errors_array, ec, lc);
     else if (st == symbol_code)
@@ -189,11 +192,19 @@ int handle_symbol(symbol** head, symbol **ent_table_head, unsigned long pc, unsi
     char *symbolName = NULL;
 
     if (parse_str(*ptr) == symbol_dt) {
-        // Allocating memory to store the symbol_type & adding it to the symbols list:
+        /* Allocating memory to store the symbol_type & adding it to the symbols list: */
         symbolLen = (unsigned short)(strchr(*ptr, ':') - *ptr);
         symbolName = (char *)strndup(*ptr, symbolLen);
         *ptr += symbolLen + 1;
-        return handle_append_symbol_to_symbols_ll(head, ent_table_head, pc, dc, ptr, errors_array, ec, lc, symbolName);
+        if (!handle_append_symbol_to_symbols_ll(head, ent_table_head, pc, dc, ptr, errors_array, ec, lc, symbolName)) {
+            /* -1 for the %s part which will be replaced in the process: */
+            size_t errLen = strlen("Invalid symbol (saved word) - %s.") + symbolLen - 2;
+            char *error = (char *) malloc((strlen("Invalid symbol (saved word) - %s.") +
+                                           symbolLen) * sizeof(char));
+            snprintf(error, errLen, "Invalid symbol (saved word) - %s.", symbolName);
+            add_new_issue_to_arr(errors_array, ec, lc, error);
+            return 0;
+        }
     }
 
     return 1;

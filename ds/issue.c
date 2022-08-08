@@ -2,8 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void print_issues(issue * issues_arr, int len) {
+void print_issues(char *fileName, issue * issues_arr, int len) {
     int i;
+    printf("~~~~ ERRORS IN FILE %s: ~~~~\n", fileName);
     for (i = 0; i < len; i++) printf("error at line %d, %s\n", issues_arr[i].line, issues_arr[i].error);
 }
 

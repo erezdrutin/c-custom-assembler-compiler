@@ -11,18 +11,18 @@
  * @return True (1) / False (0).
  */
 int validate_struct_str(char *ptr) {
-    // Skipping the ".struct " part:
+    /* Skipping the ".struct " part: */
     char *temp = strdup(trim(ptr) + strlen(".struct") + 1);
     ptr = temp;
     char *token = strtok(temp, ",");
-    // First parameter must be a number:
+    /* First parameter must be a number: */
     if (!is_number(trim(token)))
         return 0;
     token = strtok(NULL, ",");
-    // Second parameter must be a valid string (looks like "<str>"):
+    /* Second parameter must be a valid string (looks like "<str>"): */
     if (count_char_in_string(token, '"') != 2)
         return 0;
-    // Freeing the memory & returning valid:
+    /* Freeing the memory & returning valid: */
     free(ptr);
     return 1;
 }
@@ -41,7 +41,7 @@ int validate_str(const char *str, enum data_type dt) {
     if (dt == sstruct) return validate_struct_str(ptr);
     if (dt == iextern && count_char_in_string(trim(ptr), ' ') == 1) return 1;
     if (dt == ientry && count_char_in_string(trim(ptr), ' ') == 1) return 1;
-    // We're handling this part later:
+    /* We're handling this part later: */
     if (dt == op) return 1;
     return 0;
 }
@@ -67,16 +67,16 @@ enum data_type parse_str(char* str) {
  * @return True (1) / False (0).
  */
 int validate_operator_usage_in_str(const char *str) {
-    // Duplicating the string & counting how many args were passed:
+    /* Duplicating the string & counting how many args were passed: */
     char *ptr = trim((char *)str), *token = NULL;
     int args = 0, res;
     operator *temp = get_operator(ptr);
-    // If we received an operator in which we expect to get 0 parameters:
+    /* If we received an operator in which we expect to get 0 parameters: */
     if (temp->ops_count == 0) {
         if (!strcmp(ptr, temp->name)) return 1;
         return 0;
     }
-    // Fetching "first" part of string & Counting how many comma separated parts are in the string:
+    /* Fetching "first" part of string & Counting how many comma separated parts are in the string: */
     ptr = strdup(trim(ptr + strlen(temp->name)));
     token = strtok(ptr, ",");
     if (temp -> ops_count == 1 && token != NULL) args++;
@@ -86,7 +86,7 @@ int validate_operator_usage_in_str(const char *str) {
     }
 
     free(ptr);
-    // Validate that the amount of args matches our expectation + that the received string != the found operator:
+    /* Validate that the amount of args matches our expectation + that the received string != the found operator: */
     return args == temp->ops_count;
 }
 
@@ -101,13 +101,13 @@ int validate_operator_usage_in_str(const char *str) {
 int validate_operator_am_usage(enum addressing_methods src_am, enum addressing_methods dest_am, operatorMetaData *op_md) {
     int i, src_flag = 0, dest_flag = 0;
     for (i = 0; i < 4 && !(src_flag && dest_flag); i++) {
-        // Validating addressing methods for both src & dest:
+        /* Validating addressing methods for both src & dest: */
         if (op_md->src_am[i] == src_am)
             src_flag = 1;
         if (op_md->dest_am[i] == dest_am)
             dest_flag = 1;
-        // If we expected an invalid addressing method but received another addressing method - return 0
-        // (initializing src with 0 is enough in this case):
+        /* If we expected an invalid addressing method but received another addressing method - return 0
+         * (initializing src with 0 is enough in this case): */
         if ((op_md->src_am[i] == invalid_addressing && src_am != invalid_addressing) || (op_md->dest_am[i] == invalid_addressing && dest_am != invalid_addressing)) {
             src_flag = 0;
             break;

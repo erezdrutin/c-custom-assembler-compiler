@@ -24,7 +24,7 @@ void handle_line_first_run(symbol **head, symbol **ent_table_head, unsigned long
     char *ptr = (char *)line;
     enum run_type rt = first_run_type;
 
-    // Handle symbols (if there are any):
+    /* Handle symbols (if there are any): */
     if (!handle_symbol(head, ent_table_head, *pc, *dc, &ptr, errors_array, ec, lc)) return;
 
     curDataType = parse_str(ptr);
@@ -33,13 +33,13 @@ void handle_line_first_run(symbol **head, symbol **ent_table_head, unsigned long
         return;
     }
 
-    // Fetch the actual data type of the row (after "skipping" the symbol_type part):
+    /* Fetch the actual data type of the row (after "skipping" the symbol_type part): */
     if (curDataType == sstring)
         handle_string(ptr, dc, data_arr, rt);
     else if (curDataType == sdata)
         handle_data(ptr, dc, data_arr, rt);
     else if (curDataType == sstruct) {
-        // Handling data up to the first comma & string after the first comma:
+        /* Handling data up to the first comma & string after the first comma: */
         handle_data(strtok(ptr, ","), dc, data_arr, rt);
         handle_string(strtok(NULL, ","), dc, data_arr, rt);
     } else if (curDataType == op)
@@ -67,18 +67,22 @@ void handle_line_first_run(symbol **head, symbol **ent_table_head, unsigned long
  */
 void first_run(const char *content, symbol **head, symbol **ent_table_head, unsigned long *pc, word **code_arr, unsigned long *dc, word **data_arr, issue **errors_array, int *ec) {
     char *ptr = strdup(content), *curLine = ptr, *nextLine = NULL;
-    int lc = 1; // Lines counter
+    /* Lines counter */
+    int lc = 1;
 
     while(curLine)
     {
         nextLine = strchr(curLine, '\n');
-        if (nextLine) *nextLine = '\0';  // temporarily terminate the current line
-        curLine = trim(curLine); // Trim whitespaces.
-        // Skipping comments in assembler file:
+        /* Temporarily terminate the current line */
+        if (nextLine) *nextLine = '\0';
+        /* Trim whitespaces */
+        curLine = trim(curLine);
+        /* Skipping comments in assembler file: */
         if (*curLine != ';'){
             if (!is_empty(curLine)) handle_line_first_run(head, ent_table_head, pc, code_arr, dc, curLine, data_arr, errors_array, ec, lc);
         }
-        if (nextLine) *nextLine = '\n';  // then restore newline-char, just to be tidy
+        /* Restore newline character */
+        if (nextLine) *nextLine = '\n';
         curLine = nextLine ? (nextLine+1) : NULL;
         lc++;
     }

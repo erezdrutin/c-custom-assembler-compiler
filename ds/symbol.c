@@ -75,7 +75,7 @@ symbol * search_list_for_dup(symbol * ptr, char * value, unsigned int address, e
  * @return Returns 0 (resembles that an error occurred).
  */
 int append_unique_symbol_error(char* new_symbol, issue **errors_array, int *ec, int lc) {
-    // -1 for the %s part which will be replaced in the process:
+    /* -1 for the %s part which will be replaced in the process: */
     size_t errLen = strlen("can't define the same symbol twice - %s.") + strlen(new_symbol) - 1;
     char *error = (char *) malloc((strlen("can't define the same symbol twice - %s.") +
                                    strlen(new_symbol)) * sizeof(char));
@@ -134,15 +134,14 @@ void append_unique_symbol_from_op(symbol** head_ref, symbol** ent_table_head, ch
                                  enum symbol_type new_kind, issue **errors_array, int *ec, int lc) {
     symbol *temp = search_list(*head_ref, new_symbol);
 
-    // If we're attempting to append a non-entry/non-extern symbol that already exists or an entry symbol that
-    // already exists - detect an error:
-    // If we're attempting to append a
+    /* If we're attempting to append a non-entry/non-extern symbol that already exists or an entry symbol that
+     * already exists - detect an error:  */
     if ((temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern)
         || search_list_type(*ent_table_head, new_symbol, symbol_entry, excludeType) != NULL) {
         append_unique_symbol_error(new_symbol, errors_array, ec, lc);
     }
 
-    // Otherwise - appending it:
+    /* Otherwise - appending it: */
     append(head_ref, new_symbol, new_address, new_kind);
 }
 
@@ -159,18 +158,18 @@ void append_unique_symbol_from_op(symbol** head_ref, symbol** ent_table_head, ch
  */
 int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, unsigned int new_address, enum symbol_type new_kind,
                   issue **errors_array, int * ec, int lc) {
-    // search for existing:
+    /* search for existing: */
     symbol *temp = search_list(*head_ref, new_symbol), *temp2 = NULL;
     temp2 = search_list(*ent_table_head, new_symbol);
 
-    // If we're attempting to append a non-entry/non-extern symbol that already exists OR an entry symbol that
-    // already exists OR a symbol code that is defined twice - detect an error:
+    /* If we're attempting to append a non-entry/non-extern symbol that already exists OR an entry symbol that
+     * already exists OR a symbol code that is defined twice - detect an error: */
     if ((temp != NULL && temp->kind != symbol_entry && temp->kind != symbol_extern && new_kind != symbol_entry && new_kind != symbol_extern)
         || search_list_type(*ent_table_head, new_symbol, symbol_entry, excludeType) != NULL
         || ((temp != NULL && new_kind == symbol_code) && (search_list_type(*head_ref, new_symbol, symbol_code, includeType) != NULL))) {
         return append_unique_symbol_error(new_symbol, errors_array, ec, lc);
     }
-    // If we detected an entry symbol - append
+    /* If we detected an entry symbol - append it to both symbols ll & entries ll: */
     else if (temp2 == NULL && new_kind == symbol_entry) {
         if (temp != NULL)
             append(ent_table_head, temp->value, temp->address, temp->kind);
@@ -181,7 +180,7 @@ int append_unique(symbol** head_ref, symbol** ent_table_head, char* new_symbol, 
 
     }
 
-    // Otherwise - appending it:
+    /* Otherwise - appending it: */
     append(head_ref, new_symbol, new_address, new_kind);
     return 1;
 }
@@ -217,7 +216,6 @@ symbol *get_entry_symbols_from_ll(const symbol *node) {
         temp1 = head;
         if (temp->kind == symbol_entry) {
             while (temp1 != NULL) {
-                //temp1->kind != symbol_entry &&
                 if (!strcmp(temp->value, temp1->value) && search_list_for_dup(res, temp1->value, temp1->address, temp1->kind) == NULL) {
                     append(&res, temp1->value, temp1->address, temp1->kind);
                 }
@@ -296,7 +294,7 @@ symbol *generate_symbols_table(const symbol *head, const symbol *ent_table_head)
 enum symbol_type get_symbol_type(const char *str) {
     char *ptr = (char *)str;
     enum data_type curDataType = parse_str(ptr);
-    // Returning symbol_data if .data / .string / .struct in the string, or symbol_code if any op in string:
+    /* Returning symbol_data if .data / .string / .struct in the string, or symbol_code if any op in string: */
     if (curDataType == sdata || curDataType == sstring || curDataType == sstruct) return symbol_data;
     else if (curDataType == op) return symbol_code;
     else if (curDataType == iextern) return symbol_extern;

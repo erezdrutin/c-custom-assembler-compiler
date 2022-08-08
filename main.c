@@ -15,10 +15,10 @@ void process_args(const int* argc, char** argv) {
     int i;
     char *content = NULL;
     for (i=1; i<*argc; i++) {
-        // Perform pre-assembly:
+        /* Perform pre-assembly: */
         if (does_file_exist(str_cat_copy(argv[i], ".as"))) {
             pre_assembly(str_cat_copy(argv[i], ".as"));
-            // Perform assembly:
+            /* Perform assembly: */
             content = read_file(str_cat_copy(argv[i], ".am"));
             if (content)
                 assemble_machine_code(argv[i], content);

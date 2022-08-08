@@ -21,15 +21,15 @@ char symbols[32] = {'!','@','#','$','%','^','&','*','<','>','a',
  */
 char * convert_to_custom_base(size_t n) {
     if (n < 32) {
-        // Converting current symbol_type to a string and returning it:
+        /* Converting current symbol_type to a string and returning it: */
         char * symbol = (char *)malloc(1);
         symbol[0] = symbols[n];
         return symbol;
     }
-    // Converting current symbol_type to a string:
+    /* Converting current symbol_type to a string: */
     char * symbol = (char *)malloc(1);
     symbol[0] = symbols[n % 32];
-    // Returning a concatenated string from the next conversion to the custom base 32 and the current one:
+    /* Returning a concatenated string from the next conversion to the custom base 32 and the current one: */
     return str_cat_copy(convert_to_custom_base(n / 32), symbol);
 }
 
@@ -47,7 +47,7 @@ char * convert_to_custom_base_2_bit(size_t n) {
     } else if (strlen(temp) == 1) {
         snprintf(res, 3, "%c%c", symbols[0], temp[0]);
     } else {
-        // Copy last 2 chars from result (the only relevant bits to display address in 0-255 range):
+        /* Copy last 2 chars from result (the only relevant bits to display address in 0-255 range): */
         strncpy(res, (temp + strlen(temp) - 2), 2);
     }
 
@@ -65,7 +65,7 @@ void convert_to_10_bit_bin(size_t number, char * value)
 {
     int i;
     for (i = 9; i >= 0; i--) {
-        // right shift & check the state of the first bit:
+        /* right shift & check the state of the first bit: */
         value[9 - i] = (number >> i) & 1 ? '1' : '0';
     }
     value[10] = '\0';
@@ -85,7 +85,7 @@ char * convert_to_x_bit_bin(size_t number, int len)
     int i;
     char *value = (char *)malloc((len + 1) * (sizeof(char)));
     for (i = len - 1; i >= 0; i--) {
-        // right shift & check the state of the first bit:
+        /* right shift & check the state of the first bit: */
         value[len - 1 - i] = (number >> i) & 1 ? '1' : '0';
     }
     value[len] = '\0';
@@ -99,20 +99,20 @@ char * convert_to_x_bit_bin(size_t number, int len)
  */
 int convert_10_bit_bin_to_decimal(const char *binary)
 {
-    // Starting from max possible value:
+    /* Starting from max possible value: */
     int power = 2<<8;
     int sum = 0;
     int i;
 
     for (i = 0; i < 10; i++)
     {
-        // "Changing sign":
+        /* "Changing sign": */
         if (i == 0 && binary[i] != '0')
             sum = power * -1;
         else
-            // Sum + current value char (minus the ascii value of '0') * pow:
+            /* Sum + current value char (minus the ascii value of '0') * pow: */
             sum += (binary[i] - '0') * power;
-        // Dividing power by 2 each time:
+        /* Dividing power by 2 each time: */
         power /= 2;
     }
 

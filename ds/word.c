@@ -36,11 +36,11 @@ void add_or_update_word_in_arr(word ** arr, unsigned long *counter, char * val, 
 word * append_word_arr(word **arr1, unsigned long counter1, word **arr2, unsigned long counter2) {
     int i;
     word *new_arr = (word *)malloc((counter1 + counter2) * sizeof(word));
-    // Update addresses for all the 2nd array addresses:
+    /* Update addresses for all the 2nd array addresses: */
     for (i = 0; i < counter2; i++) (*arr2)[i].address += counter1;
-    // Copy first array, then copy 2nd array to new array:
+    /* Copy first array, then copy 2nd array to new array: */
     memcpy(new_arr, *arr1, counter1 * sizeof(word));
     memcpy(new_arr + counter1, *arr2, counter2 * sizeof(word));
-    // Return new array:
+    /* Return new array: */
     return new_arr;
 }

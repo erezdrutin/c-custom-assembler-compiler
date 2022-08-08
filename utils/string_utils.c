@@ -78,7 +78,7 @@ size_t calc_chars_between_ch_and_token(const char* string, const char* token, ch
     sum = (size_t) ((size_t)strlen(string) - (size_t)strlen((char *)strstr(string, token)));
     for(j = sum; j >= 0; j--) {
         if (string[j] == ch) {
-            // Returning the amount of chars until reaching the ch:
+            /* Returning the amount of chars until reaching the ch: */
             return sum - (j + 1);
         }
     }
@@ -159,16 +159,18 @@ char* trim_multiline_string(const char* s) {
     size_t curLineLen;
     while(curLine)
     {
-        // Fetch next line and perform relevant allocations:
+        /* Fetch next line and perform relevant allocations: */
         const char * nextLine = strchr(curLine, '\n');
         curLineLen = nextLine ? (nextLine-curLine) : strlen(curLine);
         tempStr = (char *) malloc(curLineLen+1);
         if (tempStr)
         {
             memcpy(tempStr, curLine, curLineLen);
-            tempStr[curLineLen] = '\0';  // NUL-terminate!
+            /* Terminate line */
+            tempStr[curLineLen] = '\0';
             tempStr = trim(tempStr);
             newStr = str_cat_copy(newStr, tempStr);
+            /* Restore new line character */
             newStr[strlen(newStr)] = '\n';
         }
         else printf("malloc() failed!?\n");
@@ -193,18 +195,20 @@ char* lspaces_append(const char* s, size_t spaces_count) {
     size_t curLineLen;
     while(curLine)
     {
-        // Fetch next line and perform relevant allocations:
+        /* Fetch next line and perform relevant allocations: */
         const char * nextLine = strchr(curLine, '\n');
         curLineLen = nextLine ? (nextLine-curLine) : strlen(curLine);
         tempStr = (char *) malloc(curLineLen + 1);
         if (tempStr && spaces_count)
         {
-            // Increasing by 1 to include '\0' if we received a valid count:
+            /* Increasing by 1 to include '\0' if we received a valid count: */
             char* spaces = create_chars_str(' ', spaces_count + 1);
             memcpy(tempStr, curLine, curLineLen);
-            tempStr[curLineLen] = '\0';  // NUL-terminate!
+            /* Terminate line */
+            tempStr[curLineLen] = '\0';
             tempStr = str_cat_copy(spaces, tempStr);
             newStr = str_cat_copy(newStr, tempStr);
+            /* Restore new line character */
             newStr[strlen(newStr)] = '\n';
         }
         else if (!tempStr) printf("malloc() failed\n");
@@ -272,13 +276,14 @@ int is_number(char *s)
 int count_numbers_in_string(const char *str) {
     int count = 0;
     char *p = (char *)str;
-    while (*p) { // While there are more characters to process...
+    /* While there are more characters to process */
+    while (*p) {
         if ( isdigit(*p) || ( (*p=='-'||*p=='+') && isdigit(*(p+1)) )) {
-            // Found a number
-            long val = strtol(p, &p, 10); // Read number
+            /* Read number and increase p's ptr to point "after the number" */
+            strtol(p, &p, 10);
             count++;
         } else {
-            // Otherwise, move on to the next character.
+            /* Otherwise, move on to the next character. */
             p++;
         }
     }

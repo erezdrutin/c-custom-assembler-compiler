@@ -56,6 +56,21 @@ operatorMetaData opsMetaData[] = {
 
 
 /**
+ * A function in charge of checking whether the received label is an operand based on its name.
+ * @param label A label to check.
+ * @return True (1) if the label is an op or False (0) if it isn't.
+ */
+int is_label_an_op(char *label) {
+    int len = (size_t) sizeof(ops) / sizeof(ops[0]), i;
+    for (i = 0; i < len; ++i) {
+        if (!strcmp(label, ops[i].name)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/**
  * A function in charge of detecting an operator within the received string.
  * If any of the operators exist in the string, the index of the first matching operator will be returned.
  * @param str A string to search for ops in it.
@@ -117,17 +132,6 @@ int is_str_in_arr(char **arr, char *str) {
     return 0;
 }
 
-int is_str_in_blacklist(char *str) {
-    int i, limit = ((REGISTERS_NUM) >= (OPS_NUM)) ? (REGISTERS_NUM) : (OPS_NUM);
-
-//    for (i = 0; i < limit; i++) {
-//        if (i < REGISTERS_NUM && !strcmp(ops[i].name))
-//        if (!strcmp(ops[i].name, str)) return 1;
-//    }
-//    for (i = 0; i < 8; i)
-    return 0;
-}
-
 /**
  * A function in charge of encoding a command without any operands (for example - hlt).
  * @param ptr A pointer to a line from the "src code" containing an operator that we would like to encode.
@@ -146,7 +150,7 @@ void encode_opless_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code
 
     if (!validate_operator_am_usage(invalid_addressing, invalid_addressing, get_operator_meta_data(op))) {
         free(cmd);
-        // Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0')
+        /* Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0') */
         size_t errLen = strlen("Invalid usage of addressing methods combined with the operator %s.") + 2;
         char *error = (char *)malloc(errLen * sizeof(char));
         snprintf(error, errLen, "Invalid usage of addressing methods combined with the operator %s.", op->name);
@@ -154,10 +158,10 @@ void encode_opless_cmd(char *ptr, symbol ** head, unsigned long *pc, word **code
         return;
     }
 
-    // Convert operand addressing method & operation addressing method to bin:
+    /* Convert operand addressing method & operation addressing method to bin: */
     char *operator_addr = convert_to_x_bit_bin(get_operator_index(op->name), 4);
 
-    // Commands are encoded with 00 as A, R, E fields + SRC is encoded as "00" since it's missing:
+    /* Commands are encoded with 00 as A, R, E fields + SRC is encoded as "00" since it's missing: */
     snprintf(cmd, WORD_SIZE, "%s%s%s%s", operator_addr, "00", "00", "00");
     add_or_update_word_in_arr(code_arr, pc, cmd, rt);
 }
@@ -181,9 +185,9 @@ void encode_one_op_cmd(char *ptr, symbol ** head, symbol **ent_table_head, unsig
     char *operand = strdup(trim(ptr + strlen(op->name)));
     enum addressing_methods operand_am = determine_addressing_method(operand);
     if (!validate_operator_am_usage(invalid_addressing, operand_am, get_operator_meta_data(op))) {
-//        free(cmd);
+        free(cmd);
         free(operand);
-        // Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0')
+        /* Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0') */
         size_t errLen = strlen("Invalid usage of addressing methods combined with the operator %s.") + 2;
         char *error = (char *)malloc(errLen * sizeof(char));
         snprintf(error, errLen, "Invalid usage of addressing methods combined with the operator %s.", op->name);
@@ -191,15 +195,15 @@ void encode_one_op_cmd(char *ptr, symbol ** head, symbol **ent_table_head, unsig
         return;
     }
 
-    // Convert operand addressing method & operation addressing method to bin:
+    /* Convert operand addressing method & operation addressing method to bin: */
     char *operand_addr = convert_to_x_bit_bin(operand_am, 2);
     char *operator_addr = convert_to_x_bit_bin(get_operator_index(op->name), 4);
 
-    // Commands are encoded with 00 as A, R, E fields + SRC is encoded as "00" since it's missing:
+    /* Commands are encoded with 00 as A, R, E fields + SRC is encoded as "00" since it's missing: */
     snprintf(cmd, WORD_SIZE, "%s%s%s%s", operator_addr, "00", operand_addr, "00");
     add_or_update_word_in_arr(code_arr, pc, cmd, rt);
 
-    // Handle relevant addressing method for the current operation:
+    /* Handle relevant addressing method for the current operation: */
     handle_addressing_method(head, ent_table_head, pc, code_arr, operand, operand_am, src_operand, rt, errors_array, ec, lc);
 }
 
@@ -228,7 +232,7 @@ void encode_two_ops_cmd(char *ptr, symbol ** head, symbol **ent_table_head, unsi
         free(cmd);
         free(src);
         free(dest);
-        // Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0')
+        /* Append to errors array as bad usage of operator (+2 chars to include the 3 chars operator + '/0') */
         size_t errLen = strlen("Invalid usage of addressing methods combined with the operator %s.");
         char *error = (char *)malloc(errLen * sizeof(char));
         snprintf(error, errLen, "Invalid usage of addressing methods combined with the operator %s.", op->name);
@@ -240,7 +244,7 @@ void encode_two_ops_cmd(char *ptr, symbol ** head, symbol **ent_table_head, unsi
     char *dest_addr = convert_to_x_bit_bin(dest_am, 2);
     char *op_addr = convert_to_x_bit_bin(get_operator_index(op->name), 4);
 
-    // Commands are encoded with 00 as A, R, E fields:
+    /* Commands are encoded with 00 as A, R, E fields: */
     snprintf(cmd, WORD_SIZE, "%s%s%s%s", op_addr, src_addr, dest_addr, "00");
     add_or_update_word_in_arr(code_arr, pc, cmd, rt);
 

@@ -3,9 +3,9 @@
 #include "../ds/word.h"
 #include "../ds/symbol.h"
 #include "./conversions.h"
-// The length of a line in the .ob file:
+/* The length of a line in the .ob file: */
 #define OB_FILE_ROW_LEN 5
-// The added length to store the base 32 representation of a symbol:
+/* The added length to store the base 32 representation of a symbol: */
 #define CUSTOM_FILE_ADD_LEN 3
 char* read_file(char* filename);
 int write_file(char* filename, char* content);

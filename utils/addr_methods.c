@@ -1,30 +1,9 @@
 #include "addr_methods.h"
 #include "string_utils.h"
 #include "conversions.h"
+#include "validators.h"
 #include <stdio.h>
 #include <string.h>
-
-/**
- * A function in charge of validating that a label is valid.
- * A valid label starts with an alphabet letter which is either small or capital, followed by a sequence of characters
- * that are alphanumeric. In addition, a valid label may consist of up to 30 characters.
- * @param str A string to check if it matches the definition of a valid label.
- * @return True (1) / False (0).
- */
-int is_label(char *str) {
-    // Starts with alphabet (small/CAP), followed by a sequence of alphabet (small/CAP) letters / digits,
-    // and is up to 30 chars.
-    int i;
-    // Validate that the label starts with an alphabet letter:
-    if (!((*str >= 'a' && *str <= 'z') || (*str >= 'A' && *str <= 'Z')) || strlen(str) > 30) return 0;
-    // Validating that every other letter is alphanumeric:
-    for (i = 1; i <= strlen(str); i++) {
-        if (!((str[i] >= '0' && str[i] <= '9') || (*str >= 'a' && *str <= 'z') || (*str >= 'A' && *str <= 'Z'))) {
-            return 0;
-        }
-    }
-    return 1;
-}
 
 /**
  * A function in charge of checking whether the received string is a register or not.
@@ -33,7 +12,7 @@ int is_label(char *str) {
  */
 int is_register(char *str) {
     int i;
-    // Initializing with '\0' at the end (therefore we need 3 chars = strlen("r%d")):
+    /* Initializing with '\0' at the end (therefore we need 3 chars = strlen("r%d")): */
     char *reg = (char *)malloc(strlen("r%d"));
     for (i = 0; i < 8; i++){
         snprintf(reg, strlen("r%d"), "r%d", i);
@@ -44,6 +23,44 @@ int is_register(char *str) {
     }
     free(reg);
     return 0;
+}
+
+/**
+ * A function in charge of checking whether the received label is in the "blacklist" of words for the assembler.
+ * The blacklist contains the .string, .data, .struct, .entry & .extern instructions, while also containing the
+ * operands, registers & macro definition words.
+ * @param label The label that we would like to check if its in the blacklist or not.
+ * @return True (1) if it is in the blacklist or False (0) if it isn't.
+ */
+int is_label_in_blacklist(char *label) {
+    if (!strcmp(".string", label) || !strcmp(".data", label) || !strcmp(".struct", label)
+        || !strcmp(".entry", label) || !strcmp(".extern", label) || !strcmp("macro", label)
+        || !strcmp("endmacro", label) || is_register(label) || is_label_an_op(label))
+        return 1;
+    return 0;
+}
+
+/**
+ * A function in charge of validating that a label is valid.
+ * A valid label starts with an alphabet letter which is either small or capital, followed by a sequence of characters
+ * that are alphanumeric. In addition, a valid label may consist of up to 30 characters.
+ * @param str A string to check if it matches the definition of a valid label.
+ * @return True (1) / False (0).
+ */
+int is_label(char *str) {
+    /* Starts with alphabet (small/CAP), followed by a sequence of alphabet (small/CAP) letters / digits,
+     * and is up to 30 chars. */
+    int i;
+    /* Validate that the label starts with an alphabet letter: */
+    if (!((*str >= 'a' && *str <= 'z') || (*str >= 'A' && *str <= 'Z'))
+        || strlen(str) > 30 || is_label_in_blacklist(str)) return 0;
+    /* Validating that every other letter is alphanumeric: */
+    for (i = 1; i <= strlen(str); i++) {
+        if (!((str[i] >= '0' && str[i] <= '9') || (*str >= 'a' && *str <= 'z') || (*str >= 'A' && *str <= 'Z'))) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 /**
@@ -83,15 +100,15 @@ int is_struct_access_call(const char *str) {
  * @return A value that represents the matching addressing method for the received string.
  */
 enum addressing_methods determine_addressing_method(char *str) {
-    // Immediate Addressing (operand starts with #):
+    /* Immediate Addressing (operand starts with #): */
     if (*str == '#' && is_number(str + 1)) return immediate_addressing;
-        // Registers Addressing:
+    /* Registers Addressing: */
     else if (is_register(str)) return register_addressing;
-        // (access to) Structs Addressing:
+    /* (access to) Structs Addressing: */
     else if (is_struct_access_call(str)) return struct_addressing;
-        // Direct Addressing:
+    /* Direct Addressing: */
     else if (is_label(str)) return direct_addressing;
-    // Otherwise, assuming that there is an invalid addressing method:
+    /* Otherwise, assuming that there is an invalid addressing method: */
     return invalid_addressing;
 }
 
@@ -108,13 +125,13 @@ enum addressing_methods determine_addressing_method(char *str) {
  */
 void handle_immediate_addressing(word **code_arr, unsigned long *pc, char *ptr, enum run_type rt) {
     char *res = (char *)malloc(sizeof(char) * WORD_SIZE);
-    // Skipping the #:
+    /* Skipping the #: */
     if (is_number(ptr + 1)) {
         snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(strtoll(ptr + 1, &ptr, 10), 8), "00");
     } else {
         return;
     }
-    // Allocating a new word in the code array & freeing res:
+    /* Allocating a new word in the code array & freeing res: */
     add_or_update_word_in_arr(code_arr, pc, res, rt);
     free(res);
 }
@@ -139,19 +156,19 @@ void handle_direct_addressing(symbol *head, symbol *ent_table_head, word **code_
 
     symbol *temp = search_list(head, ptr);
     if (temp != NULL) {
-        // Append value to words array as external:
+        /* Append value to words array as external: */
         if (temp->kind == symbol_extern || temp->kind == symbol_entry) {
             append_unique_symbol_from_op(&head, &ent_table_head, ptr, (unsigned int)*pc, symbol_code, errors_arr, ec, lc);
             snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(temp->address, 8), "01");
             add_or_update_word_in_arr(code_arr, pc, res, rt);
         }
         else {
-            // Append value to words array as relocatable:
+            /* Append value to words array as relocatable: */
             snprintf(res, WORD_SIZE, "%s%s", convert_to_x_bit_bin(temp->address, 8), "10");
             add_or_update_word_in_arr(code_arr, pc, res, rt);
         }
     } else {
-        // Appending a sequence of 10 Xs to the code_arr:
+        /* Appending a sequence of 10 Xs to the code_arr: */
         add_or_update_word_in_arr(code_arr, pc, create_chars_str('X', WORD_SIZE), rt);
     }
 
@@ -181,12 +198,12 @@ void handle_struct_addressing(symbol * head, symbol *ent_table_head, word **code
     token = strtok(NULL, ".");
     ind = strdup(trim(token));
 
-    // Handle the first part of the struct as a direct addressing (as a label):
+    /* Handle the first part of the struct as a direct addressing (as a label): */
     handle_direct_addressing(head, ent_table_head, code_arr, pc, st, rt, errors_arr, ec, lc);
-    // Allocating a new word in the code array & freeing first, second & ptr:
+    /* Allocating a new word in the code array & freeing first, second & ptr: */
     snprintf(second, WORD_SIZE, "%s%s", convert_to_x_bit_bin((size_t)(*ind - '0'), 8), "00");
     add_or_update_word_in_arr(code_arr, pc, second, rt);
-//    free(second);
+    free(second);
     free(ptr);
 }
 
@@ -214,7 +231,7 @@ void handle_register_addressing(word **code_arr, unsigned long *pc, const char *
         free(res);
         return;
     }
-    // Allocating a new word in the code array & freeing res:
+    /* Allocating a new word in the code array & freeing res: */
     add_or_update_word_in_arr(code_arr, pc, res, rt);
     free(res);
 }
