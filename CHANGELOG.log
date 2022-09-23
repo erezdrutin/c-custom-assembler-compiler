@@ -1,0 +1,14 @@
+* 51krlf9    2022-08-15   Hopefully passed linear algebra 1 & added usage examples of the program (pngs).
+* 5281388    2022-08-08   Fixed double print of errors at certain times
+* 59dfa98    2022-08-08   Changed comments style to c90 + added blacklist validity check for labels
+* e34dd6f    2022-08-07   Finished cleaning the code
+* fd29ecc    2022-08-07   Finished 1st phase of cleaning the code
+* 4c7f578    2022-08-07   Started cleaning the code, still a long way to go though...
+* 92cb28d    2022-08-06   Integrated string instructions validity checks
+* c04ba68    2022-08-06   FINALIZED CONTENT even though the code looks like a mess at the moment
+* 8349ade    2022-08-05   Started integrating .ob file creation
+* cea70b1    2022-08-05   Started integrating 2nd run
+* dd48477    2022-08-04   Finished integrating addressing methods for 1st run
+* f2f20e7    2022-08-01   Finished basic detection of data types from .am file
+* 060128b    2022-08-01   Started integrating ops functionality
+* dad0ade    2022-07-17   first commit

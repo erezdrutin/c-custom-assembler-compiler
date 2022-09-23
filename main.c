@@ -1,7 +1,7 @@
-#include "utils/files.h"
-#include "utils/string_utils.h"
-#include "stages/pre_assembly.h"
-#include "stages/assembler.h"
+#include "files.h"
+#include "string_utils.h"
+#include "pre_assembly.h"
+#include "assembler.h"
 #include <stdio.h>
 #include <string.h>
 
